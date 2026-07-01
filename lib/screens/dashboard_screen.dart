@@ -264,7 +264,7 @@ class DashboardScreen extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text('TOTAL SPENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white50, letterSpacing: 1)),
+                                  const Text('TOTAL SPENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1)),
                                   Text('₹${totalSpending.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
                                   Text('$totalReceipts Receipts Saved', style: const TextStyle(fontSize: 9, color: ReceiptoTheme.highlight)),
                                 ],
@@ -286,7 +286,7 @@ class DashboardScreen extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text('ACTIVE WARRANTIES', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white50, letterSpacing: 1)),
+                                  const Text('ACTIVE WARRANTIES', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1)),
                                   Text('$activeWarranties Items', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
                                   Text(
                                     expiringSoon > 0 ? '$expiringSoon Expiring Soon' : 'All secure',
@@ -320,7 +320,7 @@ class DashboardScreen extends ConsumerWidget {
                 children: [
                   const Text(
                     'RECENT RECEIPTS',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white50, letterSpacing: 1.5),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1.5),
                   ),
                   if (filteredReceipts.length != allReceipts.length)
                     Text(
@@ -379,7 +379,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 4),
-            Icon(Icons.arrow_drop_down_rounded, size: 16, color: isActive ? Colors.white : Colors.white50),
+            Icon(Icons.arrow_drop_down_rounded, size: 16, color: isActive ? Colors.white : Colors.white60),
           ],
         ),
       ),
@@ -444,7 +444,7 @@ class DashboardScreen extends ConsumerWidget {
                 children: [
                   Text(
                     '₹${receipt.total.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.black, color: Colors.white),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white),
                   ),
                   const SizedBox(height: 4),
                   if (hasWarranty)
@@ -655,7 +655,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.analytics_outlined, color: Colors.white50, size: 24),
+            icon: const Icon(Icons.analytics_outlined, color: Colors.white60, size: 24),
             onPressed: () => context.push('/analytics'),
           ),
         ],

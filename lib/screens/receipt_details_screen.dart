@@ -26,7 +26,7 @@ class ReceiptDetailsScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white50)),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
           ),
           TextButton(
             onPressed: () async {

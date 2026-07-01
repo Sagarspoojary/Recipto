@@ -15,7 +15,7 @@ class AnalyticsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final receiptsAsync = ref.watch(receiptsProvider);
+    final receiptsAsync = ref.watch(receiptsStreamProvider);
 
     return Scaffold(
       body: ParticleAtmosphere(

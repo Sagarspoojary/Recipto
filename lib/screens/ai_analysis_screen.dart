@@ -26,7 +26,7 @@ class _AiAnalysisScreenState extends ConsumerState<AiAnalysisScreen> {
     });
 
     // Add to state provider database
-    await ref.read(receiptsProvider.notifier).addReceipt(widget.receipt);
+    await ref.read(receiptServiceProvider).saveReceipt(widget.receipt);
 
     if (mounted) {
       setState(() {
