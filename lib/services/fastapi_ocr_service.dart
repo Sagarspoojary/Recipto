@@ -9,11 +9,11 @@ class FastApiOcrService {
 
   Future<String> uploadAndExtractText(String filePath) async {
     try {
-      // 1. Try production Render server first
+      // 1. Try production Render server first - Allow 90s to cover Render Free Tier cold starts
       final request = http.MultipartRequest('POST', Uri.parse('$_renderUrl/ocr'));
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
       
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 40));
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 90));
       final response = await http.Response.fromStream(streamedResponse);
       
       if (response.statusCode == 200) {
