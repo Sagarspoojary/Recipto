@@ -19,7 +19,10 @@ abstract class AuthService {
 
 class FirebaseAuthService implements AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    // Web client ID (client_type 3) from google-services.json
+    serverClientId: '15580599771-vqp5kf2g3gtqdsnp1i0ri6pnifquth0g.apps.googleusercontent.com',
+  );
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   AppUser? _mapFirebaseUser(User? user) {
