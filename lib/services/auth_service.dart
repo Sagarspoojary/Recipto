@@ -142,7 +142,7 @@ class FirebaseAuthService implements AuthService {
         Uri.parse('https://github.com/login/device/code'),
         headers: {'Accept': 'application/json'},
         body: {
-          'client_id': '0v23lihmxyu3lKb0kMt9',
+          'client_id': 'Ov23lihmxyu3lKb0kMt9',
           'scope': 'read:user user:email',
         },
       );
@@ -242,7 +242,7 @@ class FirebaseAuthService implements AuthService {
           Uri.parse('https://github.com/login/oauth/access_token'),
           headers: {'Accept': 'application/json'},
           body: {
-            'client_id': '0v23lihmxyu3lKb0kMt9',
+            'client_id': 'Ov23lihmxyu3lKb0kMt9',
             'device_code': deviceCode,
             'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
           },
