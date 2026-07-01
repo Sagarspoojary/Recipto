@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class UserProfile {
   final String uid;
   final String fullName;
@@ -76,10 +78,10 @@ class UserProfile {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
-      'full_name': fullName,
+      'fullName': fullName,
       'email': email,
-      'phone_number': phoneNumber,
-      'date_of_birth': dateOfBirth,
+      'phoneNumber': phoneNumber,
+      'dateOfBirth': dateOfBirth,
       'gender': gender,
       'country': country,
       'state': state,
@@ -87,20 +89,20 @@ class UserProfile {
       'address': address,
       'language': language,
       'occupation': occupation,
-      'photo_url': photoURL,
-      'auth_provider': authProvider,
-      'created_at': createdAt?.toIso8601String(),
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
+      'photoURL': photoURL,
+      'authProvider': authProvider,
+      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     };
   }
 
   factory UserProfile.fromMap(Map<String, dynamic> map, String id) {
     return UserProfile(
       uid: id,
-      fullName: map['full_name'] ?? map['fullName'] ?? map['displayName'] ?? '',
+      fullName: map['fullName'] ?? map['displayName'] ?? '',
       email: map['email'] ?? '',
-      phoneNumber: map['phone_number'] ?? map['phoneNumber'] ?? '',
-      dateOfBirth: map['date_of_birth'] ?? map['dateOfBirth'] ?? '',
+      phoneNumber: map['phoneNumber'] ?? '',
+      dateOfBirth: map['dateOfBirth'] ?? '',
       gender: map['gender'] ?? '',
       country: map['country'] ?? '',
       state: map['state'] ?? '',
@@ -108,10 +110,18 @@ class UserProfile {
       address: map['address'] ?? '',
       language: map['language'] ?? 'en',
       occupation: map['occupation'] ?? '',
-      photoURL: map['photo_url'] ?? map['photoURL'] ?? map['photoUrl'],
-      authProvider: map['auth_provider'] ?? map['authProvider'] ?? 'email',
-      createdAt: map['created_at'] != null ? DateTime.tryParse(map['created_at']) : (map['createdAt'] != null ? DateTime.tryParse(map['createdAt']) : null),
-      updatedAt: map['updated_at'] != null ? DateTime.tryParse(map['updated_at']) : (map['updatedAt'] != null ? DateTime.tryParse(map['updatedAt']) : null),
+      photoURL: map['photoURL'] ?? map['photoUrl'],
+      authProvider: map['authProvider'] ?? 'email',
+      createdAt: map['createdAt'] != null
+          ? (map['createdAt'] is Timestamp
+              ? (map['createdAt'] as Timestamp).toDate()
+              : DateTime.tryParse(map['createdAt'].toString()))
+          : null,
+      updatedAt: map['updatedAt'] != null
+          ? (map['updatedAt'] is Timestamp
+              ? (map['updatedAt'] as Timestamp).toDate()
+              : DateTime.tryParse(map['updatedAt'].toString()))
+          : null,
     );
   }
 }
