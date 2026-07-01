@@ -22,37 +22,37 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBs9u5EHOqDs2OAFYPrmox0y9gy8uqtnxw',
-    appId: '1:556353258296:web:1234567890abcdef',
-    messagingSenderId: '556353258296',
-    projectId: 'receipto-48592',
-    authDomain: 'receipto-48592.firebaseapp.com',
-    storageBucket: 'receipto-48592.appspot.com',
+    apiKey: 'AIzaSyBhtL3HBJ3WiwhTVQET2Qj2S63iYjP51hw',
+    appId: '1:15580599771:web:b1d8f92ce3b4f4c37cdab2',
+    messagingSenderId: '15580599771',
+    projectId: 'recipto-febbf',
+    authDomain: 'recipto-febbf.firebaseapp.com',
+    storageBucket: 'recipto-febbf.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBs9u5EHOqDs2OAFYPrmox0y9gy8uqtnxw',
-    appId: '1:556353258296:android:71f93228066e3b4f4c37cd',
-    messagingSenderId: '556353258296',
-    projectId: 'receipto-48592',
-    storageBucket: 'receipto-48592.firebasestorage.app',
+    apiKey: 'AIzaSyBhtL3HBJ3WiwhTVQET2Qj2S63iYjP51hw',
+    appId: '1:15580599771:android:2f0277a121cb6f045a83fe',
+    messagingSenderId: '15580599771',
+    projectId: 'recipto-febbf',
+    storageBucket: 'recipto-febbf.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBs9u5EHOqDs2OAFYPrmox0y9gy8uqtnxw',
-    appId: '1:556353258296:ios:abcdef123456',
-    messagingSenderId: '556353258296',
-    projectId: 'receipto-48592',
-    storageBucket: 'receipto-48592.appspot.com',
+    apiKey: 'AIzaSyBhtL3HBJ3WiwhTVQET2Qj2S63iYjP51hw',
+    appId: '1:15580599771:ios:2f0277a121cb6f045a83fe',
+    messagingSenderId: '15580599771',
+    projectId: 'recipto-febbf',
+    storageBucket: 'recipto-febbf.firebasestorage.app',
     iosBundleId: 'com.receipto.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBs9u5EHOqDs2OAFYPrmox0y9gy8uqtnxw',
-    appId: '1:556353258296:ios:abcdef123456',
-    messagingSenderId: '556353258296',
-    projectId: 'receipto-48592',
-    storageBucket: 'receipto-48592.appspot.com',
+    apiKey: 'AIzaSyBhtL3HBJ3WiwhTVQET2Qj2S63iYjP51hw',
+    appId: '1:15580599771:ios:2f0277a121cb6f045a83fe',
+    messagingSenderId: '15580599771',
+    projectId: 'recipto-febbf',
+    storageBucket: 'recipto-febbf.firebasestorage.app',
     iosBundleId: 'com.receipto.app',
   );
 }

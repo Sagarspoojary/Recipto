@@ -1,95 +1,26 @@
 {
   "project_info": {
-    "project_number": "556353258296",
-    "project_id": "receipto-48592",
-    "storage_bucket": "receipto-48592.firebasestorage.app"
+    "project_number": "15580599771",
+    "project_id": "recipto-febbf",
+    "storage_bucket": "recipto-febbf.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:556353258296:android:4c7f98b459fc25144c37cd",
-        "android_client_info": {
-          "package_name": "com.example.receipto"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "556353258296-hsug06k0ol9vtesj02hjjj5pcnbsaomf.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.receipto",
-            "certificate_hash": "89890d2cf50ae1cad6aa78382b16c98753b4b8ff"
-          }
-        },
-        {
-          "client_id": "556353258296-56vusgs1cv3a9usl21st09q2kod12db6.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBs9u5EHOqDs2OAFYPrmox0y9gy8uqtnxw"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "556353258296-56vusgs1cv3a9usl21st09q2kod12db6.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "556353258296-vf6186ps29ocd8lt4eatlg478dvdpl8n.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.receipto.app"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:556353258296:android:71f93228066e3b4f4c37cd",
+        "mobilesdk_app_id": "1:15580599771:android:2f0277a121cb6f045a83fe",
         "android_client_info": {
           "package_name": "com.receipto.app"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "556353258296-cch81sb27hjch9qtlsjq1858r0gj9rnr.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.receipto.app",
-            "certificate_hash": "89890d2cf50ae1cad6aa78382b16c98753b4b8ff"
-          }
-        },
-        {
-          "client_id": "556353258296-56vusgs1cv3a9usl21st09q2kod12db6.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBs9u5EHOqDs2OAFYPrmox0y9gy8uqtnxw"
+          "current_key": "AIzaSyBhtL3HBJ3WiwhTVQET2Qj2S63iYjP51hw"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "556353258296-56vusgs1cv3a9usl21st09q2kod12db6.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "556353258296-vf6186ps29ocd8lt4eatlg478dvdpl8n.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.receipto.app"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
