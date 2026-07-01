@@ -78,11 +78,15 @@ class _AiProcessingScreenState extends State<AiProcessingScreen> {
         setState(() {
           _hasError = true;
           _progress = 0.0;
-          if (errStr.contains('AI Engine Offline') || errStr.contains('503')) {
+          if (errStr.contains('Configuration Error')) {
+            _isOffline = false;
+            _errorMessage = 'Configuration Error. Invalid or missing GROQ_API_KEY in backend environment.';
+          } else if (errStr.contains('No Internet Connection')) {
             _isOffline = true;
-            _errorMessage = 'AI Engine Offline. Make sure Ollama is running locally with qwen2.5:7b.';
+            _errorMessage = 'No Internet Connection. Please check your network and try again.';
           } else {
-            _errorMessage = 'Unable to understand receipt. Run AI Again.';
+            _isOffline = false;
+            _errorMessage = 'AI Service Unavailable. Run AI Again.';
           }
         });
       }
@@ -116,13 +120,21 @@ class _AiProcessingScreenState extends State<AiProcessingScreen> {
                         children: [
                           if (_hasError) ...[
                             Icon(
-                              _isOffline ? Icons.wifi_off_rounded : Icons.psychology_alt_outlined,
+                              _errorMessage.contains('Configuration')
+                                  ? Icons.lock_rounded
+                                  : _isOffline
+                                      ? Icons.wifi_off_rounded
+                                      : Icons.psychology_alt_outlined,
                               size: 64,
                               color: ReceiptoTheme.error,
                             ).animate().shake(),
                             const SizedBox(height: 24),
                             Text(
-                              _isOffline ? 'AI ENGINE OFFLINE' : 'EXTRACTION ERROR',
+                              _errorMessage.contains('Configuration')
+                                  ? 'CONFIGURATION ERROR'
+                                  : _isOffline
+                                      ? 'NO INTERNET CONNECTION'
+                                      : 'AI SERVICE UNAVAILABLE',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,

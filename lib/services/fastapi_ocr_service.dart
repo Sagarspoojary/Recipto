@@ -61,36 +61,53 @@ class FastApiOcrService {
         body: jsonEncode({'text': ocrText}),
       ).timeout(const Duration(seconds: 90));
       
-      if (response.statusCode == 200) {
-        return response.body;
-      } else if (response.statusCode == 503) {
-        throw Exception('AI Engine Offline');
-      } else {
-        throw Exception('Server returned status: ${response.statusCode}');
-      }
+      return _handleApiResponse(response);
     } catch (e) {
-      if (e.toString().contains('AI Engine Offline')) {
+      if (e.toString().contains('Configuration Error') ||
+          e.toString().contains('No Internet Connection') ||
+          e.toString().contains('AI Service Unavailable')) {
         rethrow;
       }
-      // Fallbacks
+      // Fallback Emulator
       try {
         final response = await http.post(
           Uri.parse('$_emulateUrl/ai-extract'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'text': ocrText}),
         ).timeout(const Duration(seconds: 45));
-        if (response.statusCode == 200) return response.body;
+        return _handleApiResponse(response);
       } catch (_) {
+        // Fallback Local
         try {
           final response = await http.post(
             Uri.parse('$_localUrl/ai-extract'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'text': ocrText}),
           ).timeout(const Duration(seconds: 45));
-          if (response.statusCode == 200) return response.body;
+          return _handleApiResponse(response);
         } catch (_) {}
       }
-      throw Exception('Failed to connect to FastAPI OCR server: $e');
+      throw Exception('AI Service Unavailable');
+    }
+  }
+
+  String _handleApiResponse(http.Response response) {
+    if (response.statusCode == 200) {
+      return response.body;
+    } else if (response.statusCode == 401) {
+      throw Exception('Configuration Error');
+    } else if (response.statusCode == 503) {
+      try {
+        final errorJson = jsonDecode(response.body);
+        final detail = errorJson['detail'] ?? '';
+        if (detail.toString().contains('No Internet Connection') ||
+            detail.toString().contains('unreachable')) {
+          throw Exception('No Internet Connection');
+        }
+      } catch (_) {}
+      throw Exception('AI Service Unavailable');
+    } else {
+      throw Exception('AI Service Unavailable');
     }
   }
 }
