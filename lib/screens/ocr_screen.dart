@@ -104,7 +104,7 @@ class OcrScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
                           onPressed: () {
-                            context.push('/scanner/ocr-placeholder');
+                            context.push('/scanner/ai-processing', extra: extractedText);
                           },
                           child: Container(
                             height: 52,

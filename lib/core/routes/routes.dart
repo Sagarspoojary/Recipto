@@ -19,6 +19,8 @@ import '../../screens/settings_screen.dart';
 import '../../screens/profile_screen.dart';
 import '../../screens/ocr_placeholder_screen.dart';
 import '../../screens/ocr_processing_screen.dart';
+import '../../screens/ai_processing_screen.dart';
+import '../../screens/ai_review_screen.dart';
 
 final GoRouter router = GoRouter(
   initialLocation: '/',
@@ -171,6 +173,26 @@ final GoRouter router = GoRouter(
           },
         );
       },
+    ),
+    GoRoute(
+      path: '/scanner/ai-processing',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: AiProcessingScreen(ocrText: state.extra as String),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    ),
+    GoRoute(
+      path: '/scanner/ai-review',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: AiReviewScreen(jsonResult: state.extra as String),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
     ),
     GoRoute(
       path: '/ai-analysis',

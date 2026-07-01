@@ -52,4 +52,45 @@ class FastApiOcrService {
       throw Exception('Failed to connect to FastAPI OCR server: $renderError');
     }
   }
+
+  Future<String> runAiExtraction(String ocrText) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_renderUrl/ai-extract'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'text': ocrText}),
+      ).timeout(const Duration(seconds: 90));
+      
+      if (response.statusCode == 200) {
+        return response.body;
+      } else if (response.statusCode == 503) {
+        throw Exception('AI Engine Offline');
+      } else {
+        throw Exception('Server returned status: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e.toString().contains('AI Engine Offline')) {
+        rethrow;
+      }
+      // Fallbacks
+      try {
+        final response = await http.post(
+          Uri.parse('$_emulateUrl/ai-extract'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'text': ocrText}),
+        ).timeout(const Duration(seconds: 45));
+        if (response.statusCode == 200) return response.body;
+      } catch (_) {
+        try {
+          final response = await http.post(
+            Uri.parse('$_localUrl/ai-extract'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'text': ocrText}),
+          ).timeout(const Duration(seconds: 45));
+          if (response.statusCode == 200) return response.body;
+        } catch (_) {}
+      }
+      throw Exception('Failed to connect to FastAPI OCR server: $e');
+    }
+  }
 }
