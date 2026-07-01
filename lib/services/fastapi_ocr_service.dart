@@ -95,7 +95,7 @@ class FastApiOcrService {
     if (response.statusCode == 200) {
       return response.body;
     } else if (response.statusCode == 401) {
-      throw Exception('Configuration Error');
+      throw Exception('Invalid API Configuration');
     } else if (response.statusCode == 503) {
       try {
         final errorJson = jsonDecode(response.body);

@@ -22,8 +22,8 @@ class _AiProcessingScreenState extends State<AiProcessingScreen> {
     'Analyzing Receipt...',
     'Understanding Products...',
     'Detecting Warranty...',
-    'Calculating Totals...',
-    'Generating Structured Data...',
+    'Classifying Category...',
+    'Preparing Receipt Details...',
   ];
   int _phraseIndex = 0;
   Timer? _phraseTimer;
@@ -78,9 +78,9 @@ class _AiProcessingScreenState extends State<AiProcessingScreen> {
         setState(() {
           _hasError = true;
           _progress = 0.0;
-          if (errStr.contains('Configuration Error')) {
+          if (errStr.contains('Invalid API Configuration')) {
             _isOffline = false;
-            _errorMessage = 'Configuration Error. Invalid or missing GROQ_API_KEY in backend environment.';
+            _errorMessage = 'Invalid API Configuration. Invalid or missing GEMINI_API_KEY in backend environment.';
           } else if (errStr.contains('No Internet Connection')) {
             _isOffline = true;
             _errorMessage = 'No Internet Connection. Please check your network and try again.';

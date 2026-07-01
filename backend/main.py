@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-app = FastAPI(title="Receipto OCR & Groq AI Engine")
+app = FastAPI(title="Receipto OCR & Gemini AI Engine")
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,10 +30,9 @@ if os.path.exists(mac_tesseract_path):
 else:
     print("Using system default Tesseract path (Linux/Docker/Render)")
 
-# Fetch Groq Configurations
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+# Fetch Gemini Configurations
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 class OcrPayload(BaseModel):
     text: str
@@ -70,17 +69,17 @@ async def extract_receipt_ai(payload: OcrPayload):
         raise HTTPException(status_code=400, detail="OCR Text cannot be empty")
         
     # Check configuration validity
-    if not GROQ_API_KEY or GROQ_API_KEY.startswith("gsk_placeholder"):
+    if not GEMINI_API_KEY or GEMINI_API_KEY.startswith("your_gemini_api_key"):
         raise HTTPException(
             status_code=401,
-            detail="Configuration Error: GROQ_API_KEY is not configured or invalid in backend env."
+            detail="Invalid API Configuration: GEMINI_API_KEY is not configured or is a placeholder in backend env."
         )
 
     system_prompt = """You are an intelligent receipt understanding engine.
-Analyze the provided raw OCR text from a shopping receipt and extract structured fields matching the JSON schema.
-Extract only factual information. Never invent values or guess. If any value is missing or unavailable, return null.
+Your task is to analyze raw OCR text extracted from receipts and invoices.
+Extract only factual information. Never guess. Never hallucinate. If any information is unavailable, return null.
 
-Return ONLY a valid JSON object matching this schema:
+Return ONLY a valid JSON object matching this schema (with no markdown wrappers or other text):
 {
   "merchant": "string or null",
   "invoiceNumber": "string or null",
@@ -91,7 +90,8 @@ Return ONLY a valid JSON object matching this schema:
       "name": "string",
       "brand": "string or null",
       "quantity": int,
-      "price": float
+      "unitPrice": float,
+      "totalPrice": float
     }
   ],
   "subtotal": float,
@@ -111,46 +111,48 @@ Return ONLY a valid JSON object matching this schema:
 }
 """
 
+    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+
     try:
-        headers = {
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        
         body = {
-            "model": GROQ_MODEL,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Raw OCR Text:\n{ocr_text}"}
+            "contents": [
+                {
+                    "parts": [
+                        {"text": f"{system_prompt}\n\nRaw OCR Text:\n{ocr_text}"}
+                    ]
+                }
             ],
-            "response_format": {"type": "json_object"},
-            "temperature": 0.0
+            "generationConfig": {
+                "responseMimeType": "application/json"
+            }
         }
         
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                GROQ_URL,
-                headers=headers,
+                gemini_url,
+                headers={"Content-Type": "application/json"},
                 json=body,
                 timeout=60.0
             )
             
             if response.status_code == 200:
                 res_data = response.json()
-                content = res_data["choices"][0]["message"]["content"]
+                text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
                 # Parse to ensure it is valid JSON
-                structured_data = json.loads(content)
+                structured_data = json.loads(text_response)
                 return structured_data
-            elif response.status_code == 401:
-                raise HTTPException(status_code=401, detail="Configuration Error: Invalid Groq API Key.")
+            elif response.status_code in (400, 403):
+                # API Key authentication errors
+                print(f"Gemini API Config Error: {response.text}")
+                raise HTTPException(status_code=401, detail="Invalid API Configuration")
             else:
-                print(f"Groq API Error: {response.text}")
+                print(f"Gemini API Error: {response.text}")
                 raise HTTPException(status_code=503, detail="AI Service Unavailable")
                 
     except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="No Internet Connection or Groq API is unreachable")
+        raise HTTPException(status_code=503, detail="No Internet Connection")
     except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="Failed to parse Groq output as valid JSON")
+        raise HTTPException(status_code=500, detail="Failed to parse Gemini output as valid JSON")
     except HTTPException:
         raise
     except Exception as e:

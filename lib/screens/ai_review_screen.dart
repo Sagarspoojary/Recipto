@@ -110,7 +110,8 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
         'name': 'New Product Item',
         'brand': '',
         'quantity': 1,
-        'price': 0.0,
+        'unitPrice': 0.0,
+        'totalPrice': 0.0,
       });
     });
   }
@@ -371,6 +372,8 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
           style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: isFieldEmpty ? Colors.amber : ReceiptoTheme.secondary, size: 18),
+            hintText: 'Not Detected',
+            hintStyle: TextStyle(color: Colors.amber.withOpacity(0.6), fontSize: 13),
             filled: true,
             fillColor: Colors.white.withOpacity(0.02),
             enabledBorder: OutlineInputBorder(
@@ -520,9 +523,13 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
                   const Text('Price', style: TextStyle(fontSize: 9, color: Colors.white30)),
                   const SizedBox(height: 4),
                   TextFormField(
-                    initialValue: product['price']?.toString() ?? '0.0',
+                    initialValue: product['unitPrice']?.toString() ?? '0.0',
                     keyboardType: TextInputType.number,
-                    onChanged: (val) => product['price'] = double.tryParse(val) ?? 0.0,
+                    onChanged: (val) {
+                      final parsedPrice = double.tryParse(val) ?? 0.0;
+                      product['unitPrice'] = parsedPrice;
+                      product['totalPrice'] = (product['quantity'] ?? 1) * parsedPrice;
+                    },
                     style: const TextStyle(color: Colors.white, fontSize: 11),
                     decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 8)),
                   ),
