@@ -248,10 +248,14 @@ class FirebaseAuthService implements AuthService {
           headers: {'Accept': 'application/json'},
           body: {
             'client_id': 'Ov23lihmxyu3lKbOkMt9',
+            'client_secret': '786f49bf2dca264494ba1c9303a0f531bb18c085',
             'device_code': deviceCode,
             'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
           },
         );
+
+        print('GitHub Poll Status: ${tokenResponse.statusCode}');
+        print('GitHub Poll Response: ${tokenResponse.body}');
 
         if (tokenResponse.statusCode == 200) {
           final tokenData = json.decode(tokenResponse.body);
