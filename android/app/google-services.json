@@ -14,14 +14,6 @@
       },
       "oauth_client": [
         {
-          "client_id": "15580599771-ap8f6sbmquguio6dtu7t796bsqfb2pnb.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.receipto.app",
-            "certificate_hash": "89890d2cf58ae1cad6aa78382b16c98753b4b8ff"
-          }
-        },
-        {
           "client_id": "15580599771-vqp5kf2g3gtqdsnp1i0ri6pnifquth0g.apps.googleusercontent.com",
           "client_type": 3
         }

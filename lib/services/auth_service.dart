@@ -1,5 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+// google_sign_in not needed — using signInWithProvider instead
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user.dart';
 
@@ -19,10 +19,7 @@ abstract class AuthService {
 
 class FirebaseAuthService implements AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    // Web client ID (client_type 3) from google-services.json
-    serverClientId: '15580599771-vqp5kf2g3gtqdsnp1i0ri6pnifquth0g.apps.googleusercontent.com',
-  );
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   AppUser? _mapFirebaseUser(User? user) {
@@ -78,19 +75,13 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<AppUser?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        throw FirebaseAuthException(
-          code: 'ERROR_ABORTED_BY_USER',
-          message: 'Sign in aborted by user',
-        );
-      }
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      // Use Firebase's built-in OAuth flow (opens Chrome Custom Tab on Android)
+      // This bypasses the SHA-1 fingerprint requirement entirely
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      googleProvider.addScope('email');
+      googleProvider.addScope('profile');
+      final UserCredential userCredential =
+          await _auth.signInWithProvider(googleProvider);
       if (userCredential.user != null) {
         await _createFirestoreProfile(
           userCredential.user!,
@@ -202,6 +193,5 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<void> signOut() async {
     await _auth.signOut();
-    await _googleSignIn.signOut();
   }
 }
