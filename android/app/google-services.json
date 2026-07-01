@@ -12,7 +12,12 @@
           "package_name": "com.receipto.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "15580599771-vqp5kf2g3gtqdsnp1i0ri6pnifquth0g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBhtL3HBJ3WiwhTVQET2Qj2S63iYjP51hw"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "15580599771-vqp5kf2g3gtqdsnp1i0ri6pnifquth0g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
