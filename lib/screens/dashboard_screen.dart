@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../core/theme/theme.dart';
 import '../models/receipt.dart';
 import '../providers/receipt_provider.dart';
@@ -17,7 +16,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final receiptsAsync = ref.watch(receiptsProvider);
+    final receiptsAsync = ref.watch(receiptsStreamProvider);
 
     return Scaffold(
       body: ParticleAtmosphere(
@@ -44,7 +43,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDashboardContent(BuildContext context, List<Receipt> receipts, WidgetRef ref) {
+  Widget _buildDashboardContent(BuildContext context, List<Receipt> allReceipts, WidgetRef ref) {
     final profileAsync = ref.watch(profileProvider);
     final profile = profileAsync.value;
 
@@ -53,16 +52,17 @@ class DashboardScreen extends ConsumerWidget {
     final cleanName = fullName.isNotEmpty ? fullName.split(' ').first : 'User';
     final greeting = hour < 12 ? 'Good Morning, $cleanName' : 'Welcome Back, $cleanName';
 
-    // Computations for Bento Grid metrics
-    final today = DateTime.now();
-    final todayReceipts = receipts.where((r) =>
-        r.date.year == today.year && r.date.month == today.month && r.date.day == today.day);
-    final todayTotal = todayReceipts.fold<double>(0, (sum, r) => sum + r.total);
+    // Watch stats & filtered lists from providers
+    final stats = ref.watch(dashboardStatsProvider);
+    final filteredReceipts = ref.watch(filteredAndSortedReceiptsProvider);
 
-    final monthlyReceipts = receipts.where((r) => r.date.year == today.year && r.date.month == today.month);
-    final monthlyTotal = monthlyReceipts.fold<double>(0, (sum, r) => sum + r.total);
+    final totalSpending = stats['totalSpending'] as double? ?? 0.0;
+    final totalReceipts = stats['totalReceipts'] as int? ?? 0;
+    final activeWarranties = stats['activeWarranties'] as int? ?? 0;
+    final expiringSoon = stats['expiringSoon'] as int? ?? 0;
 
     return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
       slivers: [
         // App Header
         SliverToBoxAdapter(
@@ -106,7 +106,9 @@ class DashboardScreen extends ConsumerWidget {
                       icon: const Icon(Icons.logout_rounded, color: Colors.white70),
                       onPressed: () async {
                         await ref.read(authProvider.notifier).signOut();
-                        context.go('/login');
+                        if (context.mounted) {
+                          context.go('/login');
+                        }
                       },
                     ),
                     const SizedBox(width: 8),
@@ -140,301 +142,520 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
 
-        // Bento Grid Body
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              // Row 1: Today Spending & Monthly Spending (Side by Side)
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 140,
-                      child: BentoCard(
-                        glowColor: ReceiptoTheme.secondary,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('TODAY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white.withOpacity(0.5), letterSpacing: 1)),
-                              Text('\$${todayTotal.toStringAsFixed(2)}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
-                              const Text('OCR Sync Completed', style: TextStyle(fontSize: 9, color: ReceiptoTheme.highlight)),
-                            ],
-                          ),
-                        ),
-                      ),
+        // Search Bar & Filters Chips
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Column(
+              children: [
+                // Search Input Field
+                TextField(
+                  onChanged: (val) => ref.read(searchQueryProvider.notifier).state = val,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Search merchant, product, category...',
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    prefixIcon: const Icon(Icons.search_rounded, color: ReceiptoTheme.secondary),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.03),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: SizedBox(
-                      height: 140,
-                      child: BentoCard(
-                        glowColor: ReceiptoTheme.primary,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('MONTHLY LIMIT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white.withOpacity(0.5), letterSpacing: 1)),
-                              Text('\$${monthlyTotal.toStringAsFixed(2)}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
-                              const Text('Budget Node: 84% Free', style: TextStyle(fontSize: 9, color: ReceiptoTheme.secondary)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Row 2: AI Insights (Wide Bento)
-              SizedBox(
-                height: 130,
-                child: BentoCard(
-                  glowColor: ReceiptoTheme.accent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(Icons.auto_awesome_rounded, color: ReceiptoTheme.accent, size: 16),
-                                  SizedBox(width: 8),
-                                  Text('AI ENGINE DEEP LEARNING', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ReceiptoTheme.accent, letterSpacing: 1.5)),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Electronics spending is 12% lower than last month. We recommend archiving tax reports before Q3.',
-                                style: TextStyle(fontSize: 12, height: 1.4, color: Colors.white),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: ReceiptoTheme.secondary),
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                // Filtering Row
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      _buildFilterChip(
+                        context,
+                        label: 'Category: ${ref.watch(selectedCategoryFilterProvider) ?? 'All'}',
+                        onTap: () => _showCategoryFilterDialog(context, ref),
+                        isActive: ref.watch(selectedCategoryFilterProvider) != null,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        context,
+                        label: 'Date: ${ref.watch(dateRangeFilterProvider) ?? 'All'}',
+                        onTap: () => _showDateRangeFilterDialog(context, ref),
+                        isActive: ref.watch(dateRangeFilterProvider) != null,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        context,
+                        label: 'Warranty: ${ref.watch(warrantyFilterProvider) ?? 'All'}',
+                        onTap: () => _showWarrantyFilterDialog(context, ref),
+                        isActive: ref.watch(warrantyFilterProvider) != null,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        context,
+                        label: 'Sort: ${ref.watch(sortByProvider)}',
+                        onTap: () => _showSortDialog(context, ref),
+                        isActive: ref.watch(sortByProvider) != 'Newest',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+        if (allReceipts.isEmpty) ...[
+          // Empty State illustration
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.receipt_long_outlined,
+                      size: 96,
+                      color: Colors.white.withOpacity(0.12),
+                    ).animate().scale(delay: 200.ms, duration: 500.ms),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'No receipts yet',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Tap the Scan button to scan your first receipt.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, color: Colors.white38),
+                    ),
+                  ],
+                ),
               ),
-
-              const SizedBox(height: 16),
-
-              // Row 3: Live Chart (Deep 3D Bento)
-              SizedBox(
-                height: 220,
-                child: BentoCard(
-                  glowColor: ReceiptoTheme.secondary,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('EXPENSE VECTORS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1)),
-                        const SizedBox(height: 12),
-                        Expanded(
-                          child: LineChart(
-                            LineChartData(
-                              gridData: const FlGridData(show: false),
-                              titlesData: const FlTitlesData(show: false),
-                              borderData: FlBorderData(show: false),
-                              minX: 0,
-                              maxX: 6,
-                              minY: 0,
-                              maxY: 6,
-                              lineBarsData: [
-                                LineChartBarData(
-                                  spots: [
-                                    const FlSpot(0, 3),
-                                    const FlSpot(1, 2.5),
-                                    const FlSpot(2, 5),
-                                    const FlSpot(3, 3.1),
-                                    const FlSpot(4, 4),
-                                    const FlSpot(5, 3.8),
-                                    const FlSpot(6, 5.5),
-                                  ],
-                                  isCurved: true,
-                                  gradient: const LinearGradient(
-                                    colors: [ReceiptoTheme.primary, ReceiptoTheme.secondary],
-                                  ),
-                                  barWidth: 4,
-                                  isStrokeCapRound: true,
-                                  dotData: const FlDotData(show: false),
-                                  belowBarData: BarAreaData(
-                                    show: true,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        ReceiptoTheme.primary.withOpacity(0.2),
-                                        ReceiptoTheme.secondary.withOpacity(0.0),
-                                      ],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                                  ),
-                                ),
-                              ],
+            ),
+          ),
+        ] else ...[
+          // Bento Statistics Row
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      // Spending
+                      Expanded(
+                        child: SizedBox(
+                          height: 120,
+                          child: BentoCard(
+                            glowColor: ReceiptoTheme.secondary,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('TOTAL SPENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white50, letterSpacing: 1)),
+                                  Text('₹${totalSpending.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+                                  Text('$totalReceipts Receipts Saved', style: const TextStyle(fontSize: 9, color: ReceiptoTheme.highlight)),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Section Header: Recent Files
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'RECENT DEPOSITS',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                      color: Colors.white,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => context.push('/analytics'),
-                    child: const Text('SEE VECTOR STATS', style: TextStyle(fontSize: 10, color: ReceiptoTheme.secondary)),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Recent Receipts List
-              if (receipts.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: Center(child: Text('No vaults scanned yet.', style: TextStyle(color: ReceiptoTheme.textMuted))),
-                )
-              else
-                ...receipts.take(4).map((receipt) => Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: BentoCard(
-                        glowColor: Colors.transparent,
-                        borderRadius: 16,
-                        onTap: () {
-                          // Go to details
-                          context.push('/receipt-details', extra: receipt);
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
+                      ),
+                      const SizedBox(width: 16),
+                      // Warranties
+                      Expanded(
+                        child: SizedBox(
+                          height: 120,
+                          child: BentoCard(
+                            glowColor: ReceiptoTheme.primary,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      color: Colors.white.withOpacity(0.05),
+                                  const Text('ACTIVE WARRANTIES', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white50, letterSpacing: 1)),
+                                  Text('$activeWarranties Items', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+                                  Text(
+                                    expiringSoon > 0 ? '$expiringSoon Expiring Soon' : 'All secure',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: expiringSoon > 0 ? Colors.amber : ReceiptoTheme.secondary,
                                     ),
-                                    child: const Icon(Icons.receipt_long_rounded, color: ReceiptoTheme.secondary),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        receipt.merchant,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '${receipt.date.toString().substring(0, 10)} • ${receipt.category}',
-                                        style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.4)),
-                                      ),
-                                    ],
                                   ),
                                 ],
                               ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    '\$${receipt.total.toStringAsFixed(2)}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${(receipt.confidence * 100).toInt()}% match',
-                                    style: const TextStyle(fontSize: 9, color: ReceiptoTheme.highlight),
-                                  ),
-                                ],
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
-                    )),
-              const SizedBox(height: 100), // Spacing for fab / nav bar
-            ]),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+          // Recent Receipts Header
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'RECENT RECEIPTS',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white50, letterSpacing: 1.5),
+                  ),
+                  if (filteredReceipts.length != allReceipts.length)
+                    Text(
+                      'Showing ${filteredReceipts.length} of ${allReceipts.length}',
+                      style: const TextStyle(fontSize: 10, color: ReceiptoTheme.highlight),
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // Receipts List View
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final receipt = filteredReceipts[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: _buildReceiptListItem(context, receipt),
+                  );
+                },
+                childCount: filteredReceipts.length,
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(BuildContext context, {required String label, required VoidCallback onTap, required bool isActive}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? ReceiptoTheme.secondary.withOpacity(0.15) : Colors.white.withOpacity(0.02),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? ReceiptoTheme.secondary.withOpacity(0.5) : Colors.white.withOpacity(0.08),
           ),
         ),
-      ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.white70,
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.arrow_drop_down_rounded, size: 16, color: isActive ? Colors.white : Colors.white50),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReceiptListItem(BuildContext context, Receipt receipt) {
+    final hasWarranty = receipt.warrantyExpiry != null;
+    final categoryIcon = _getCategoryIcon(receipt.category);
+
+    return InkWell(
+      onTap: () {
+        context.push('/receipt/${receipt.receiptId}', extra: receipt);
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: BentoCard(
+        glowColor: Colors.white.withOpacity(0.05),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              // Receipt Thumbnail
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  color: Colors.white.withOpacity(0.03),
+                  child: receipt.receiptImageUrl != null && receipt.receiptImageUrl!.isNotEmpty
+                      ? Image.network(
+                          receipt.receiptImageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(categoryIcon, color: ReceiptoTheme.secondary, size: 22),
+                        )
+                      : Icon(categoryIcon, color: ReceiptoTheme.secondary, size: 22),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Merchant Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      receipt.merchant,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      receipt.purchaseDate ?? 'No Date',
+                      style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.4)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Financials & Warranty info
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '₹${receipt.total.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.black, color: Colors.white),
+                  ),
+                  const SizedBox(height: 4),
+                  if (hasWarranty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: ReceiptoTheme.highlight.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'WARRANTY',
+                        style: TextStyle(fontSize: 7, fontWeight: FontWeight.bold, color: ReceiptoTheme.highlight),
+                      ),
+                    )
+                  else
+                    Text(
+                      receipt.category,
+                      style: const TextStyle(fontSize: 9, color: ReceiptoTheme.secondary),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Electronics':
+      case 'Home Appliances':
+        return Icons.devices_other_rounded;
+      case 'Groceries':
+        return Icons.shopping_basket_rounded;
+      case 'Restaurant':
+        return Icons.restaurant_rounded;
+      case 'Medical':
+        return Icons.medical_services_rounded;
+      case 'Fuel':
+        return Icons.local_gas_station_rounded;
+      case 'Fashion':
+        return Icons.checkroom_rounded;
+      case 'Travel':
+        return Icons.flight_takeoff_rounded;
+      case 'Furniture':
+        return Icons.chair_rounded;
+      case 'Books':
+        return Icons.menu_book_rounded;
+      case 'Entertainment':
+        return Icons.videogame_asset_rounded;
+      default:
+        return Icons.receipt_long_rounded;
+    }
+  }
+
+  // Filter sheets definitions
+  void _showCategoryFilterDialog(BuildContext context, WidgetRef ref) {
+    final current = ref.read(selectedCategoryFilterProvider);
+    final categoriesList = [
+      'All', 'Electronics', 'Groceries', 'Restaurant', 'Medical', 'Fuel',
+      'Fashion', 'Travel', 'Furniture', 'Books', 'Entertainment', 'Home Appliances', 'Others'
+    ];
+
+    _showSelectorBottomSheet(
+      context,
+      title: 'Filter by Category',
+      items: categoriesList,
+      selectedItem: current ?? 'All',
+      onSelect: (item) {
+        ref.read(selectedCategoryFilterProvider.notifier).state = item == 'All' ? null : item;
+      },
+    );
+  }
+
+  void _showDateRangeFilterDialog(BuildContext context, WidgetRef ref) {
+    final current = ref.read(dateRangeFilterProvider);
+    final dateRanges = ['All', 'This Month', 'Last Month', 'This Year'];
+
+    _showSelectorBottomSheet(
+      context,
+      title: 'Filter by Purchase Date',
+      items: dateRanges,
+      selectedItem: current ?? 'All',
+      onSelect: (item) {
+        ref.read(dateRangeFilterProvider.notifier).state = item == 'All' ? null : item;
+      },
+    );
+  }
+
+  void _showWarrantyFilterDialog(BuildContext context, WidgetRef ref) {
+    final current = ref.read(warrantyFilterProvider);
+    final warrantyStatuses = ['All', 'Expired', 'Expiring Soon'];
+
+    _showSelectorBottomSheet(
+      context,
+      title: 'Filter by Warranty Status',
+      items: warrantyStatuses,
+      selectedItem: current ?? 'All',
+      onSelect: (item) {
+        ref.read(warrantyFilterProvider.notifier).state = item == 'All' ? null : item;
+      },
+    );
+  }
+
+  void _showSortDialog(BuildContext context, WidgetRef ref) {
+    final current = ref.read(sortByProvider);
+    final sortOptions = ['Newest', 'Oldest', 'Highest Price', 'Lowest Price', 'Merchant Name'];
+
+    _showSelectorBottomSheet(
+      context,
+      title: 'Sort Receipts',
+      items: sortOptions,
+      selectedItem: current,
+      onSelect: (item) {
+        ref.read(sortByProvider.notifier).state = item;
+      },
+    );
+  }
+
+  void _showSelectorBottomSheet(
+    BuildContext context, {
+    required String title,
+    required List<String> items,
+    required String selectedItem,
+    required Function(String) onSelect,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black.withOpacity(0.95),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    final isSel = item == selectedItem;
+                    return ListTile(
+                      title: Text(
+                        item,
+                        style: TextStyle(color: isSel ? ReceiptoTheme.secondary : Colors.white70, fontWeight: isSel ? FontWeight.bold : FontWeight.normal),
+                      ),
+                      trailing: isSel ? const Icon(Icons.check_circle_rounded, color: ReceiptoTheme.secondary) : null,
+                      onTap: () {
+                        onSelect(item);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
   Widget _buildFuturisticNavBar(BuildContext context) {
     return Container(
-      height: 90,
+      height: 68,
+      margin: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.2),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+        color: Colors.black.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.08), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: ReceiptoTheme.primary.withOpacity(0.05),
+            blurRadius: 20,
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           IconButton(
-            icon: const Icon(Icons.dashboard_rounded, color: ReceiptoTheme.secondary),
+            icon: const Icon(Icons.dashboard_rounded, color: ReceiptoTheme.secondary, size: 24),
             onPressed: () {},
           ),
-          // Floating Scan Button
+          // Floating Scan button
           GestureDetector(
             onTap: () => context.push('/scanner'),
             child: Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [ReceiptoTheme.primary, ReceiptoTheme.accent],
+                gradient: LinearGradient(
+                  colors: [ReceiptoTheme.primary, ReceiptoTheme.secondary],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: ReceiptoTheme.primary.withOpacity(0.4),
-                    blurRadius: 15,
-                    spreadRadius: 2,
-                  ),
-                ],
               ),
-              child: const Icon(Icons.document_scanner_rounded, color: Colors.white, size: 28),
+              child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 20),
             ),
-          )
-              .animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.06, 1.06), duration: 2.seconds),
+          ),
           IconButton(
-            icon: const Icon(Icons.bar_chart_rounded, color: Colors.white54),
+            icon: const Icon(Icons.analytics_outlined, color: Colors.white50, size: 24),
             onPressed: () => context.push('/analytics'),
           ),
         ],

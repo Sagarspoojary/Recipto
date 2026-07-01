@@ -10,7 +10,8 @@ import '../widgets/particle_atmosphere.dart';
 
 class AiProcessingScreen extends StatefulWidget {
   final String ocrText;
-  const AiProcessingScreen({Key? key, required this.ocrText}) : super(key: key);
+  final String? filePath;
+  const AiProcessingScreen({Key? key, required this.ocrText, this.filePath}) : super(key: key);
 
   @override
   State<AiProcessingScreen> createState() => _AiProcessingScreenState();
@@ -68,7 +69,10 @@ class _AiProcessingScreenState extends State<AiProcessingScreen> {
         });
         await Future.delayed(const Duration(milliseconds: 500));
         if (mounted) {
-          context.pushReplacement('/scanner/ai-review', extra: jsonResult);
+          context.pushReplacement('/scanner/ai-review', extra: {
+            'json': jsonResult,
+            'filePath': widget.filePath,
+          });
         }
       }
     } catch (e) {

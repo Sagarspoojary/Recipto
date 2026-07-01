@@ -54,7 +54,10 @@ class _OcrProcessingScreenState extends State<OcrProcessingScreen> {
 
       await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {
-        context.pushReplacement('/ocr', extra: resultText);
+        context.pushReplacement('/ocr', extra: {
+          'text': resultText,
+          'filePath': widget.filePath,
+        });
       }
     } catch (e) {
       if (mounted) {

@@ -27,7 +27,7 @@ class PdfService {
                       ),
                     ),
                     pw.Text(
-                      'Receipt ID: #${receipt.id}',
+                      'Receipt ID: #${receipt.receiptId}',
                       style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey),
                     ),
                   ],
@@ -42,19 +42,19 @@ class PdfService {
                   ),
                 ),
                 pw.SizedBox(height: 8),
-                pw.Text('Date: ${receipt.date.toString().substring(0, 10)}'),
+                pw.Text('Date: ${receipt.purchaseDate ?? "No Date"}'),
                 pw.Text('Category: ${receipt.category}'),
-                pw.Text('Payment: ${receipt.paymentMethod}'),
+                pw.Text('Payment: ${receipt.paymentMethod ?? "Not Provided"}'),
                 pw.SizedBox(height: 32),
                 pw.Text('ITEMS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
                 pw.Divider(),
-                ...receipt.items.map((item) => pw.Padding(
+                ...receipt.products.map((item) => pw.Padding(
                       padding: const pw.EdgeInsets.symmetric(vertical: 4),
                       child: pw.Row(
                         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                         children: [
-                          pw.Text(item.name),
-                          pw.Text('\$${item.price.toStringAsFixed(2)}'),
+                          pw.Text('${item.quantity}x ${item.name}'),
+                          pw.Text('INR ${item.totalPrice.toStringAsFixed(2)}'),
                         ],
                       ),
                     )),
@@ -63,15 +63,22 @@ class PdfService {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('Tax'),
-                    pw.Text('\$${receipt.tax.toStringAsFixed(2)}'),
+                    pw.Text('Subtotal'),
+                    pw.Text('INR ${receipt.subtotal.toStringAsFixed(2)}'),
+                  ],
+                ),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Tax / GST'),
+                    pw.Text('INR ${receipt.gst.toStringAsFixed(2)}'),
                   ],
                 ),
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Text('Discount'),
-                    pw.Text('-\$${receipt.discount.toStringAsFixed(2)}'),
+                    pw.Text('-INR ${receipt.discount.toStringAsFixed(2)}'),
                   ],
                 ),
                 pw.Divider(thickness: 1.5),
@@ -86,7 +93,7 @@ class PdfService {
                       ),
                     ),
                     pw.Text(
-                      '\$${receipt.total.toStringAsFixed(2)}',
+                      'INR ${receipt.total.toStringAsFixed(2)}',
                       style: pw.TextStyle(
                         fontSize: 18,
                         fontWeight: pw.FontWeight.bold,

@@ -20,10 +20,9 @@ class OcrService {
       DateTime date = DateTime.now();
       List<ReceiptItem> items = [];
 
-      // Basic regex parsing to extract merchant/prices
       final lines = recognizedText.text.split('\n');
       if (lines.isNotEmpty) {
-        merchant = lines[0].trim(); // Usually the first line is store name
+        merchant = lines[0].trim();
       }
 
       final priceRegex = RegExp(r'(\d+\.\d{2})');
@@ -41,30 +40,37 @@ class OcrService {
 
       if (foundPrices.isNotEmpty) {
         foundPrices.sort();
-        total = foundPrices.last; // Highest price is usually the total
+        total = foundPrices.last;
         if (foundPrices.length > 1) {
-          tax = foundPrices[foundPrices.length - 2] * 0.08; // Estimate tax or find second highest
+          tax = foundPrices[foundPrices.length - 2] * 0.08;
         }
       }
 
-      // Add dummy item
-      items.add(ReceiptItem(name: 'Scanned Purchase Item', price: total - tax));
+      items.add(ReceiptItem(
+        name: 'Scanned Purchase Item',
+        brand: '',
+        quantity: 1,
+        unitPrice: total - tax,
+        totalPrice: total - tax,
+      ));
 
       return Receipt(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        receiptId: DateTime.now().millisecondsSinceEpoch.toString(),
         merchant: merchant.length > 25 ? merchant.substring(0, 25) : merchant,
-        date: date,
-        items: items,
-        tax: double.parse(tax.toStringAsFixed(2)),
+        purchaseDate: date.toIso8601String().split('T')[0],
+        purchaseTime: date.toIso8601String().split('T')[1].substring(0, 5),
+        products: items,
+        subtotal: total - tax,
+        gst: double.parse(tax.toStringAsFixed(2)),
         discount: 0.0,
         total: total,
+        currency: 'INR',
         category: _guessCategory(merchant),
-        confidence: 0.88,
-        imageUrl: path,
+        receiptImageUrl: path,
         paymentMethod: 'Card Scan',
+        createdAt: DateTime.now(),
       );
     } catch (e) {
-      // Graceful fallback to mock on exception (e.g. simulator without support)
       return _generateMockReceiptResult();
     }
   }
@@ -78,12 +84,12 @@ class OcrService {
       return 'Travel';
     }
     if (m.contains('aws') || m.contains('google') || m.contains('microsoft') || m.contains('cloud')) {
-      return 'Bills';
+      return 'Others';
     }
     if (m.contains('apple') || m.contains('best buy') || m.contains('electronics')) {
       return 'Electronics';
     }
-    return 'Shopping';
+    return 'Groceries';
   }
 
   Future<Receipt> _generateMockReceiptResult() async {
@@ -97,20 +103,28 @@ class OcrService {
     double tax = double.parse((total * 0.0825).toStringAsFixed(2));
 
     List<ReceiptItem> items = [
-      ReceiptItem(name: '$selectedMerchant Smart Premium Service', price: total - tax),
+      ReceiptItem(
+        name: '$selectedMerchant Smart Premium Service',
+        brand: '',
+        quantity: 1,
+        unitPrice: total - tax,
+        totalPrice: total - tax,
+      ),
     ];
 
     return Receipt(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      receiptId: DateTime.now().millisecondsSinceEpoch.toString(),
       merchant: selectedMerchant,
-      date: DateTime.now(),
-      items: items,
-      tax: tax,
+      purchaseDate: DateTime.now().toIso8601String().split('T')[0],
+      products: items,
+      subtotal: total - tax,
+      gst: tax,
       discount: 0.0,
       total: total,
+      currency: 'INR',
       category: _guessCategory(selectedMerchant),
-      confidence: 0.95,
       paymentMethod: 'Credit Card',
+      createdAt: DateTime.now(),
     );
   }
 

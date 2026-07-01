@@ -1,33 +1,25 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/theme/theme.dart';
 import '../models/receipt.dart';
-import '../providers/auth_provider.dart';
 import '../providers/receipt_provider.dart';
 import '../widgets/bento_card.dart';
 import '../widgets/kinetic_typography.dart';
 import '../widgets/particle_atmosphere.dart';
 
-class AiReviewScreen extends ConsumerStatefulWidget {
-  final String jsonResult;
-  final String? filePath;
-
-  const AiReviewScreen({
-    Key? key,
-    required this.jsonResult,
-    this.filePath,
-  }) : super(key: key);
+class EditReceiptScreen extends ConsumerStatefulWidget {
+  final Receipt receipt;
+  const EditReceiptScreen({Key? key, required this.receipt}) : super(key: key);
 
   @override
-  ConsumerState<AiReviewScreen> createState() => _AiReviewScreenState();
+  ConsumerState<EditReceiptScreen> createState() => _EditReceiptScreenState();
 }
 
-class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
-  late Map<String, dynamic> _data;
+class _EditReceiptScreenState extends ConsumerState<EditReceiptScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
+  late List<Map<String, dynamic>> _products;
 
   // Text Controllers
   late TextEditingController _merchantController;
@@ -65,36 +57,27 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
   @override
   void initState() {
     super.initState();
-    try {
-      _data = jsonDecode(widget.jsonResult);
-    } catch (_) {
-      _data = {};
-    }
+    _merchantController = TextEditingController(text: widget.receipt.merchant);
+    _invoiceController = TextEditingController(text: widget.receipt.invoiceNumber);
+    _dateController = TextEditingController(text: widget.receipt.purchaseDate);
+    _timeController = TextEditingController(text: widget.receipt.purchaseTime);
+    _subtotalController = TextEditingController(text: widget.receipt.subtotal.toString());
+    _gstController = TextEditingController(text: widget.receipt.gst.toString());
+    _discountController = TextEditingController(text: widget.receipt.discount.toString());
+    _totalController = TextEditingController(text: widget.receipt.total.toString());
+    _paymentController = TextEditingController(text: widget.receipt.paymentMethod);
+    _notesController = TextEditingController(text: widget.receipt.notes);
 
-    _merchantController = TextEditingController(text: _data['merchant']?.toString());
-    _invoiceController = TextEditingController(text: _data['invoiceNumber']?.toString());
-    _dateController = TextEditingController(text: _data['purchaseDate']?.toString());
-    _timeController = TextEditingController(text: _data['purchaseTime']?.toString());
-    _subtotalController = TextEditingController(text: _data['subtotal']?.toString() ?? '0.0');
-    _gstController = TextEditingController(text: _data['gst']?.toString() ?? '0.0');
-    _discountController = TextEditingController(text: _data['discount']?.toString() ?? '0.0');
-    _totalController = TextEditingController(text: _data['total']?.toString() ?? '0.0');
-    _paymentController = TextEditingController(text: _data['paymentMethod']?.toString());
-    _notesController = TextEditingController(text: _data['notes']?.toString());
+    _category = _categories.contains(widget.receipt.category) ? widget.receipt.category : 'Others';
+    _warrantyMonths = _warrantyOptions.contains(widget.receipt.warrantyMonths) ? widget.receipt.warrantyMonths : null;
 
-    final extractedCategory = _data['category']?.toString();
-    _category = _categories.contains(extractedCategory) ? extractedCategory : 'Others';
-
-    final wMonths = _data['warrantyMonths'];
-    if (wMonths is int && _warrantyOptions.contains(wMonths)) {
-      _warrantyMonths = wMonths;
-    } else {
-      _warrantyMonths = null;
-    }
-
-    if (_data['products'] == null) {
-      _data['products'] = [];
-    }
+    _products = widget.receipt.products.map((p) => {
+      'name': p.name,
+      'brand': p.brand ?? '',
+      'quantity': p.quantity,
+      'unitPrice': p.unitPrice,
+      'totalPrice': p.totalPrice,
+    }).toList();
   }
 
   @override
@@ -114,8 +97,8 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
 
   void _addNewProduct() {
     setState(() {
-      (_data['products'] as List).add({
-        'name': 'New Product Item',
+      _products.add({
+        'name': 'New Item',
         'brand': '',
         'quantity': 1,
         'unitPrice': 0.0,
@@ -126,11 +109,11 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
 
   void _removeProduct(int index) {
     setState(() {
-      (_data['products'] as List).removeAt(index);
+      _products.removeAt(index);
     });
   }
 
-  Future<void> _saveReceiptToFirebase() async {
+  Future<void> _updateReceipt() async {
     if (_merchantController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a merchant name'), backgroundColor: ReceiptoTheme.error),
@@ -143,18 +126,7 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
     });
 
     try {
-      final receiptId = DateTime.now().millisecondsSinceEpoch.toString();
-      final user = ref.read(authProvider).value;
-      if (user == null) throw Exception("User not logged in");
-
-      // 1. Upload receipt image to Firebase Storage (if local file path is available)
-      String? imageUrl;
-      if (widget.filePath != null && widget.filePath!.isNotEmpty && !widget.filePath!.endsWith('.pdf')) {
-        imageUrl = await ref.read(receiptServiceProvider).uploadReceiptImage(receiptId, widget.filePath!);
-      }
-
-      // 2. Parse product rows
-      final productsList = (_data['products'] as List).map((p) {
+      final productsList = _products.map((p) {
         final qty = p['quantity'] is int ? p['quantity'] : int.tryParse(p['quantity'].toString()) ?? 1;
         final unitPrice = p['unitPrice'] is double ? p['unitPrice'] : double.tryParse(p['unitPrice'].toString()) ?? 0.0;
         return ReceiptItem(
@@ -166,9 +138,7 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
         );
       }).toList();
 
-      // 3. Create Receipt Model
-      final receipt = Receipt(
-        receiptId: receiptId,
+      final updatedReceipt = widget.receipt.copyWith(
         merchant: _merchantController.text.trim(),
         invoiceNumber: _invoiceController.text.trim().isEmpty ? null : _invoiceController.text.trim(),
         purchaseDate: _dateController.text.trim().isEmpty ? null : _dateController.text.trim(),
@@ -178,7 +148,6 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
         gst: double.tryParse(_gstController.text) ?? 0.0,
         discount: double.tryParse(_discountController.text) ?? 0.0,
         total: double.tryParse(_totalController.text) ?? 0.0,
-        currency: 'INR',
         paymentMethod: _paymentController.text.trim().isEmpty ? null : _paymentController.text.trim(),
         category: _category ?? 'Others',
         warrantyMonths: _warrantyMonths,
@@ -188,16 +157,14 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
                 .toIso8601String().split('T')[0]
             : null,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-        receiptImageUrl: imageUrl,
-        createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-        createdBy: user.uid,
       );
 
-      // 4. Save to Firestore
-      await ref.read(receiptServiceProvider).saveReceipt(receipt);
+      // Save back to Firestore
+      await ref.read(receiptServiceProvider).saveReceipt(updatedReceipt);
 
       if (mounted) {
+        // Pop twice to return to dashboard with real-time update
         context.go('/dashboard');
       }
     } catch (e) {
@@ -205,19 +172,8 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
         setState(() {
           _isSaving = false;
         });
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Save Error', style: TextStyle(color: Colors.white)),
-            backgroundColor: Colors.grey[900],
-            content: Text('Failed to save receipt: $e', style: const TextStyle(color: Colors.white70)),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK', style: TextStyle(color: ReceiptoTheme.secondary)),
-              ),
-            ],
-          ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update: $e'), backgroundColor: ReceiptoTheme.error),
         );
       }
     }
@@ -241,18 +197,18 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
                       child: Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+                            icon: const Icon(Icons.close_rounded, color: Colors.white70),
                             onPressed: () => context.pop(),
                           ),
                           const Text(
-                            'AI Receipt Review',
+                            'Edit Receipt',
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ],
                       ),
                     ),
 
-                    // Scrollable Fields
+                    // Scrollable fields
                     Expanded(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -309,10 +265,10 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
                                     ListView.separated(
                                       shrinkWrap: true,
                                       physics: const NeverScrollableScrollPhysics(),
-                                      itemCount: (_data['products'] as List).length,
+                                      itemCount: _products.length,
                                       separatorBuilder: (_, __) => const Divider(color: Colors.white10),
                                       itemBuilder: (context, idx) {
-                                        final prod = (_data['products'] as List)[idx];
+                                        final prod = _products[idx];
                                         return _buildProductRow(prod, idx);
                                       },
                                     ),
@@ -334,14 +290,12 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
                                     const Text('CLASSIFICATION & TOTALS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1.5)),
                                     const SizedBox(height: 16),
                                     
-                                    // Category Dropdown
                                     const Text('Category', style: TextStyle(fontSize: 10, color: Colors.white38)),
                                     const SizedBox(height: 6),
                                     _buildCategoryDropdown(),
 
                                     const SizedBox(height: 16),
 
-                                    // Warranty Dropdown
                                     const Text('Warranty Period', style: TextStyle(fontSize: 10, color: Colors.white38)),
                                     const SizedBox(height: 6),
                                     _buildWarrantyDropdown(),
@@ -378,70 +332,33 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
                       ),
                     ),
 
-                    // Bottom navigation action buttons
+                    // Actions Button
                     Padding(
                       padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            ),
-                            onPressed: _isSaving ? null : _saveReceiptToFirebase,
-                            child: Container(
-                              height: 52,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                gradient: const LinearGradient(
-                                  colors: [ReceiptoTheme.primary, ReceiptoTheme.secondary],
-                                ),
-                              ),
-                              child: _isSaving
-                                  ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(Colors.white))
-                                  : const Text(
-                                      'Save Receipt',
-                                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1),
-                                    ),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: _isSaving ? null : _updateReceipt,
+                        child: Container(
+                          height: 52,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: const LinearGradient(
+                              colors: [ReceiptoTheme.primary, ReceiptoTheme.secondary],
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: Colors.white.withOpacity(0.12)),
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                  ),
-                                  onPressed: () {
-                                    context.pop();
-                                  },
-                                  child: const Text('Retake', style: TextStyle(color: Colors.white70)),
+                          child: _isSaving
+                              ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(Colors.white))
+                              : const Text(
+                                  'Save Changes',
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: Colors.white.withOpacity(0.12)),
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                  ),
-                                  onPressed: () {
-                                    context.pop();
-                                  },
-                                  child: const Text('Run AI Again', style: TextStyle(color: Colors.white70)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ],

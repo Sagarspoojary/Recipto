@@ -1,121 +1,192 @@
-import 'dart:convert';
-
 class ReceiptItem {
   final String name;
-  final double price;
+  final String? brand;
+  final int quantity;
+  final double unitPrice;
+  final double totalPrice;
 
-  ReceiptItem({required this.name, required this.price});
+  ReceiptItem({
+    required this.name,
+    this.brand,
+    required this.quantity,
+    required this.unitPrice,
+    required this.totalPrice,
+  });
 
-  Map<String, dynamic> toMap() => {'name': name, 'price': price};
+  Map<String, dynamic> toMap() => {
+        'name': name,
+        'brand': brand,
+        'quantity': quantity,
+        'unitPrice': unitPrice,
+        'totalPrice': totalPrice,
+      };
+
   factory ReceiptItem.fromMap(Map<String, dynamic> map) => ReceiptItem(
         name: map['name'] ?? '',
-        price: (map['price'] as num?)?.toDouble() ?? 0.0,
+        brand: map['brand'],
+        quantity: map['quantity'] is int ? map['quantity'] : (map['quantity'] as num?)?.toInt() ?? 1,
+        unitPrice: (map['unitPrice'] as num?)?.toDouble() ?? 0.0,
+        totalPrice: (map['totalPrice'] as num?)?.toDouble() ?? 0.0,
       );
 }
 
 class Receipt {
-  final String id;
+  final String receiptId;
   final String merchant;
-  final DateTime date;
-  final List<ReceiptItem> items;
-  final double tax;
+  final String? invoiceNumber;
+  final String? purchaseDate;
+  final String? purchaseTime;
+  final List<ReceiptItem> products;
+  final double subtotal;
+  final double gst;
   final double discount;
   final double total;
+  final String currency;
+  final String? paymentMethod;
   final String category;
-  final double confidence;
-  final String? imageUrl;
-  final String paymentMethod;
+  final int? warrantyMonths;
+  final String? warrantyExpiry;
+  final String? merchantPhone;
+  final String? merchantEmail;
+  final String? merchantAddress;
   final String? notes;
-  final bool isFavorite;
-  final bool isArchived;
+  final String? receiptImageUrl;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final String? createdBy;
 
   Receipt({
-    required this.id,
+    required this.receiptId,
     required this.merchant,
-    required this.date,
-    required this.items,
-    required this.tax,
+    this.invoiceNumber,
+    this.purchaseDate,
+    this.purchaseTime,
+    required this.products,
+    required this.subtotal,
+    required this.gst,
     required this.discount,
     required this.total,
+    required this.currency,
+    this.paymentMethod,
     required this.category,
-    required this.confidence,
-    this.imageUrl,
-    required this.paymentMethod,
+    this.warrantyMonths,
+    this.warrantyExpiry,
+    this.merchantPhone,
+    this.merchantEmail,
+    this.merchantAddress,
     this.notes,
-    this.isFavorite = false,
-    this.isArchived = false,
+    this.receiptImageUrl,
+    this.createdAt,
+    this.updatedAt,
+    this.createdBy,
   });
 
   Receipt copyWith({
-    String? id,
+    String? receiptId,
     String? merchant,
-    DateTime? date,
-    List<ReceiptItem>? items,
-    double? tax,
+    String? invoiceNumber,
+    String? purchaseDate,
+    String? purchaseTime,
+    List<ReceiptItem>? products,
+    double? subtotal,
+    double? gst,
     double? discount,
     double? total,
-    String? category,
-    double? confidence,
-    String? imageUrl,
+    String? currency,
     String? paymentMethod,
+    String? category,
+    int? warrantyMonths,
+    String? warrantyExpiry,
+    String? merchantPhone,
+    String? merchantEmail,
+    String? merchantAddress,
     String? notes,
-    bool? isFavorite,
-    bool? isArchived,
+    String? receiptImageUrl,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? createdBy,
   }) {
     return Receipt(
-      id: id ?? this.id,
+      receiptId: receiptId ?? this.receiptId,
       merchant: merchant ?? this.merchant,
-      date: date ?? this.date,
-      items: items ?? this.items,
-      tax: tax ?? this.tax,
+      invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+      purchaseDate: purchaseDate ?? this.purchaseDate,
+      purchaseTime: purchaseTime ?? this.purchaseTime,
+      products: products ?? this.products,
+      subtotal: subtotal ?? this.subtotal,
+      gst: gst ?? this.gst,
       discount: discount ?? this.discount,
       total: total ?? this.total,
-      category: category ?? this.category,
-      confidence: confidence ?? this.confidence,
-      imageUrl: imageUrl ?? this.imageUrl,
+      currency: currency ?? this.currency,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      category: category ?? this.category,
+      warrantyMonths: warrantyMonths ?? this.warrantyMonths,
+      warrantyExpiry: warrantyExpiry ?? this.warrantyExpiry,
+      merchantPhone: merchantPhone ?? this.merchantPhone,
+      merchantEmail: merchantEmail ?? this.merchantEmail,
+      merchantAddress: merchantAddress ?? this.merchantAddress,
       notes: notes ?? this.notes,
-      isFavorite: isFavorite ?? this.isFavorite,
-      isArchived: isArchived ?? this.isArchived,
+      receiptImageUrl: receiptImageUrl ?? this.receiptImageUrl,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      createdBy: createdBy ?? this.createdBy,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'receiptId': receiptId,
       'merchant': merchant,
-      'date': date.toIso8601String(),
-      'items': items.map((x) => x.toMap()).toList(),
-      'tax': tax,
+      'invoiceNumber': invoiceNumber,
+      'purchaseDate': purchaseDate,
+      'purchaseTime': purchaseTime,
+      'products': products.map((x) => x.toMap()).toList(),
+      'subtotal': subtotal,
+      'gst': gst,
       'discount': discount,
       'total': total,
-      'category': category,
-      'confidence': confidence,
-      'imageUrl': imageUrl,
+      'currency': currency,
       'paymentMethod': paymentMethod,
+      'category': category,
+      'warrantyMonths': warrantyMonths,
+      'warrantyExpiry': warrantyExpiry,
+      'merchantPhone': merchantPhone,
+      'merchantEmail': merchantEmail,
+      'merchantAddress': merchantAddress,
       'notes': notes,
-      'isFavorite': isFavorite,
-      'isArchived': isArchived,
+      'receiptImageUrl': receiptImageUrl,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'createdBy': createdBy,
     };
   }
 
   factory Receipt.fromMap(Map<String, dynamic> map) {
     return Receipt(
-      id: map['id'] ?? '',
+      receiptId: map['receiptId'] ?? '',
       merchant: map['merchant'] ?? '',
-      date: DateTime.parse(map['date'] ?? DateTime.now().toIso8601String()),
-      items: List<ReceiptItem>.from(
-          (map['items'] as List? ?? []).map((x) => ReceiptItem.fromMap(x))),
-      tax: (map['tax'] as num?)?.toDouble() ?? 0.0,
+      invoiceNumber: map['invoiceNumber'],
+      purchaseDate: map['purchaseDate'],
+      purchaseTime: map['purchaseTime'],
+      products: List<ReceiptItem>.from(
+          (map['products'] as List? ?? []).map((x) => ReceiptItem.fromMap(x))),
+      subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0.0,
+      gst: (map['gst'] as num?)?.toDouble() ?? 0.0,
       discount: (map['discount'] as num?)?.toDouble() ?? 0.0,
       total: (map['total'] as num?)?.toDouble() ?? 0.0,
-      category: map['category'] ?? 'Shopping',
-      confidence: (map['confidence'] as num?)?.toDouble() ?? 1.0,
-      imageUrl: map['imageUrl'],
-      paymentMethod: map['paymentMethod'] ?? 'Cash',
+      currency: map['currency'] ?? 'INR',
+      paymentMethod: map['paymentMethod'],
+      category: map['category'] ?? 'Others',
+      warrantyMonths: map['warrantyMonths'] is int ? map['warrantyMonths'] : (map['warrantyMonths'] as num?)?.toInt(),
+      warrantyExpiry: map['warrantyExpiry'],
+      merchantPhone: map['merchantPhone'],
+      merchantEmail: map['merchantEmail'],
+      merchantAddress: map['merchantAddress'],
       notes: map['notes'],
-      isFavorite: map['isFavorite'] ?? false,
-      isArchived: map['isArchived'] ?? false,
+      receiptImageUrl: map['receiptImageUrl'],
+      createdAt: map['createdAt'] != null ? DateTime.tryParse(map['createdAt']) : null,
+      updatedAt: map['updatedAt'] != null ? DateTime.tryParse(map['updatedAt']) : null,
+      createdBy: map['createdBy'],
     );
   }
 }

@@ -7,7 +7,8 @@ import '../widgets/particle_atmosphere.dart';
 
 class OcrScreen extends StatelessWidget {
   final String extractedText;
-  const OcrScreen({Key? key, required this.extractedText}) : super(key: key);
+  final String? filePath;
+  const OcrScreen({Key? key, required this.extractedText, this.filePath}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +105,10 @@ class OcrScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
                           onPressed: () {
-                            context.push('/scanner/ai-processing', extra: extractedText);
+                            context.push('/scanner/ai-processing', extra: {
+                              'ocrText': extractedText,
+                              'filePath': filePath,
+                            });
                           },
                           child: Container(
                             height: 52,
