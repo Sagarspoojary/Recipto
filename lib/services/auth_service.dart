@@ -147,8 +147,11 @@ class FirebaseAuthService implements AuthService {
         },
       );
 
+      print('GitHub Device Code Status: ${response.statusCode}');
+      print('GitHub Device Code Response: ${response.body}');
+
       if (response.statusCode != 200) {
-        throw Exception("Failed to get GitHub device code");
+        throw Exception("Failed to get GitHub device code: ${response.body}");
       }
 
       final data = json.decode(response.body);
