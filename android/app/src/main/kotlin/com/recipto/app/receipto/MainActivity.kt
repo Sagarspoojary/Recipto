@@ -1,4 +1,4 @@
-package com.receipto.app.receipto
+package com.recipto.app.receipto
 
 import io.flutter.embedding.android.FlutterActivity
 

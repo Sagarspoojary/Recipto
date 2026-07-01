@@ -7,12 +7,20 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:15580599771:android:2f0277a121cb6f045a83fe",
+        "mobilesdk_app_id": "1:15580599771:android:779f289f8b5593975a83fe",
         "android_client_info": {
-          "package_name": "com.receipto.app"
+          "package_name": "com.recipto.app"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "15580599771-l1l7f4d5g8ho727qbbb03g2pak40u7k9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.recipto.app",
+            "certificate_hash": "89890d2cf50ae1cad6aa78382b16c98753b4b8ff"
+          }
+        },
         {
           "client_id": "15580599771-vqp5kf2g3gtqdsnp1i0ri6pnifquth0g.apps.googleusercontent.com",
           "client_type": 3

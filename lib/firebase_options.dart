@@ -32,7 +32,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBhtL3HBJ3WiwhTVQET2Qj2S63iYjP51hw',
-    appId: '1:15580599771:android:2f0277a121cb6f045a83fe',
+    appId: '1:15580599771:android:779f289f8b5593975a83fe',
     messagingSenderId: '15580599771',
     projectId: 'recipto-febbf',
     storageBucket: 'recipto-febbf.firebasestorage.app',
@@ -44,7 +44,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '15580599771',
     projectId: 'recipto-febbf',
     storageBucket: 'recipto-febbf.firebasestorage.app',
-    iosBundleId: 'com.receipto.app',
+    iosBundleId: 'com.recipto.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -53,6 +53,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '15580599771',
     projectId: 'recipto-febbf',
     storageBucket: 'recipto-febbf.firebasestorage.app',
-    iosBundleId: 'com.receipto.app',
+    iosBundleId: 'com.recipto.app',
   );
 }
