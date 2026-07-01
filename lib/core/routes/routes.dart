@@ -23,7 +23,10 @@ import '../../screens/ai_processing_screen.dart';
 import '../../screens/ai_review_screen.dart';
 import '../../screens/edit_receipt_screen.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 final GoRouter router = GoRouter(
+  navigatorKey: navigatorKey,
   initialLocation: '/',
   routes: [
     GoRoute(
