@@ -1,6 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user.dart';
 
 abstract class AuthService {
@@ -18,86 +16,75 @@ abstract class AuthService {
 }
 
 class FirebaseAuthService implements AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId: '556353258296-56vusgs1cv3a9usl21st09q2kod12db6.apps.googleusercontent.com',
-  );
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseClient _client = Supabase.instance.client;
 
-  AppUser? _mapFirebaseUser(User? user) {
+  AppUser? _mapSupabaseUser(User? user) {
     if (user == null) return null;
     return AppUser(
-      uid: user.uid,
+      uid: user.id,
       email: user.email ?? '',
-      displayName: user.displayName ?? 'Future Agent',
-      photoUrl: user.photoURL,
+      displayName: user.userMetadata?['displayName']?.toString() ??
+          user.userMetadata?['full_name']?.toString() ??
+          'Future Agent',
+      photoUrl: user.userMetadata?['avatar_url']?.toString(),
     );
   }
 
-  Future<void> _createFirestoreProfile(User user, String name, String provider) async {
-    final userRef = _firestore.collection('users').doc(user.uid);
-    final userDoc = await userRef.get();
-    if (!userDoc.exists) {
-      await userRef.set({
-        'uid': user.uid,
-        'fullName': name,
-        'email': user.email ?? '',
-        'photoURL': user.photoURL,
-        'authProvider': provider,
-        'phoneNumber': '',
-        'dateOfBirth': '',
-        'gender': '',
-        'country': '',
-        'state': '',
-        'city': '',
-        'address': '',
-        'language': 'en',
-        'occupation': '',
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-        'lastLogin': FieldValue.serverTimestamp(),
-        'emailVerified': user.emailVerified,
-      });
-    } else {
-      await userRef.update({
-        'lastLogin': FieldValue.serverTimestamp(),
-        'emailVerified': user.emailVerified,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+  Future<void> _createSupabaseProfile(User user, String name, String provider) async {
+    try {
+      final response = await _client
+          .from('profiles')
+          .select()
+          .eq('uid', user.id)
+          .maybeSingle();
+
+      if (response == null) {
+        await _client.from('profiles').insert({
+          'uid': user.id,
+          'full_name': name,
+          'email': user.email ?? '',
+          'photo_url': user.userMetadata?['avatar_url']?.toString(),
+          'auth_provider': provider,
+          'phone_number': '',
+          'date_of_birth': '',
+          'gender': '',
+          'country': '',
+          'state': '',
+          'city': '',
+          'address': '',
+          'language': 'en',
+          'occupation': '',
+        });
+      } else {
+        await _client.from('profiles').update({
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('uid', user.id);
+      }
+    } catch (e) {
+      print('Profile sync error: $e');
     }
   }
 
   @override
   Stream<AppUser?> get onAuthStateChanged =>
-      _auth.authStateChanges().map(_mapFirebaseUser);
+      _client.auth.onAuthStateChange.map((data) => _mapSupabaseUser(data.session?.user));
 
   @override
-  AppUser? get currentUser => _mapFirebaseUser(_auth.currentUser);
+  AppUser? get currentUser => _mapSupabaseUser(_client.auth.currentUser);
 
   @override
   Future<AppUser?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        throw FirebaseAuthException(
-          code: 'ERROR_ABORTED_BY_USER',
-          message: 'Sign in aborted by user',
-        );
-      }
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
-      if (userCredential.user != null) {
-        await _createFirestoreProfile(
-          userCredential.user!,
-          userCredential.user!.displayName ?? 'Google User',
+      await _client.auth.signInWithOAuth(OAuthProvider.google);
+      final user = _client.auth.currentUser;
+      if (user != null) {
+        await _createSupabaseProfile(
+          user,
+          user.userMetadata?['full_name']?.toString() ?? 'Google User',
           'google',
         );
       }
-      return _mapFirebaseUser(userCredential.user);
+      return _mapSupabaseUser(user);
     } catch (e) {
       rethrow;
     }
@@ -106,16 +93,16 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<AppUser?> signInWithApple() async {
     try {
-      final appleProvider = AppleAuthProvider();
-      final UserCredential userCredential = await _auth.signInWithProvider(appleProvider);
-      if (userCredential.user != null) {
-        await _createFirestoreProfile(
-          userCredential.user!,
-          userCredential.user!.displayName ?? 'Apple User',
+      await _client.auth.signInWithOAuth(OAuthProvider.apple);
+      final user = _client.auth.currentUser;
+      if (user != null) {
+        await _createSupabaseProfile(
+          user,
+          user.userMetadata?['full_name']?.toString() ?? 'Apple User',
           'apple',
         );
       }
-      return _mapFirebaseUser(userCredential.user);
+      return _mapSupabaseUser(user);
     } catch (e) {
       rethrow;
     }
@@ -124,19 +111,16 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<AppUser?> signInWithGitHub() async {
     try {
-      final githubProvider = GithubAuthProvider();
-      githubProvider.setCustomParameters({
-        'prompt': 'login',
-      });
-      final UserCredential userCredential = await _auth.signInWithProvider(githubProvider);
-      if (userCredential.user != null) {
-        await _createFirestoreProfile(
-          userCredential.user!,
-          userCredential.user!.displayName ?? 'GitHub User',
+      await _client.auth.signInWithOAuth(OAuthProvider.github);
+      final user = _client.auth.currentUser;
+      if (user != null) {
+        await _createSupabaseProfile(
+          user,
+          user.userMetadata?['full_name']?.toString() ?? 'GitHub User',
           'github',
         );
       }
-      return _mapFirebaseUser(userCredential.user);
+      return _mapSupabaseUser(user);
     } catch (e) {
       rethrow;
     }
@@ -145,18 +129,16 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<AppUser?> signUpWithEmailAndPassword(String name, String email, String password) async {
     try {
-      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      final response = await _client.auth.signUp(
         email: email,
         password: password,
+        data: {'displayName': name},
       );
-      if (userCredential.user != null) {
-        await userCredential.user!.updateDisplayName(name);
-        await userCredential.user!.reload();
-        final updatedUser = _auth.currentUser!;
-        await _createFirestoreProfile(updatedUser, name, 'email');
-        await sendEmailVerification();
+      final user = response.user;
+      if (user != null) {
+        await _createSupabaseProfile(user, name, 'email');
       }
-      return _mapFirebaseUser(userCredential.user);
+      return _mapSupabaseUser(user);
     } catch (e) {
       rethrow;
     }
@@ -165,18 +147,19 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<AppUser?> signInWithEmailAndPassword(String email, String password) async {
     try {
-      final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      final response = await _client.auth.signInWithPassword(
         email: email,
         password: password,
       );
-      if (userCredential.user != null) {
-        await _createFirestoreProfile(
-          userCredential.user!,
-          userCredential.user!.displayName ?? 'Email User',
+      final user = response.user;
+      if (user != null) {
+        await _createSupabaseProfile(
+          user,
+          user.userMetadata?['displayName']?.toString() ?? 'Email User',
           'email',
         );
       }
-      return _mapFirebaseUser(userCredential.user);
+      return _mapSupabaseUser(user);
     } catch (e) {
       rethrow;
     }
@@ -184,23 +167,21 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Future<void> sendPasswordReset(String email) async {
-    await _auth.sendPasswordResetEmail(email: email);
+    await _client.auth.resetPasswordForEmail(email);
   }
 
   @override
   Future<void> sendEmailVerification() async {
-    await _auth.currentUser?.sendEmailVerification();
+    // Supabase handles email verification flow dynamically via signup setting redirects
   }
 
   @override
   Future<bool> isEmailVerified() async {
-    await _auth.currentUser?.reload();
-    return _auth.currentUser?.emailVerified ?? false;
+    return _client.auth.currentUser?.emailConfirmedAt != null;
   }
 
   @override
   Future<void> signOut() async {
-    await _auth.signOut();
-    await _googleSignIn.signOut();
+    await _client.auth.signOut();
   }
 }
