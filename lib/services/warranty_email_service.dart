@@ -51,18 +51,20 @@ class WarrantyEmailService {
           .where((n) => n.isNotEmpty)
           .toList();
 
-      // ── 3-Day Reminder ─────────────────────────────────────────────────
-      if (daysRemaining == 3) {
-        final key = '$_prefix3Day$receiptId';
-        if (prefs.getBool(key) != true) {
-          final sent = await _sendEmail(
-            userEmail: userEmail,
-            merchant: receipt.merchant,
-            productNames: productNames,
-            expiryDate: receipt.warrantyExpiry!,
-            daysRemaining: 3,
-          );
-          if (sent) await prefs.setBool(key, true);
+      // ── Day-countdown Reminders: 3 days, 2 days, 1 day ────────────────
+      for (final reminderDay in [3, 2, 1]) {
+        if (daysRemaining == reminderDay) {
+          final key = '${_prefix3Day}${reminderDay}d_$receiptId';
+          if (prefs.getBool(key) != true) {
+            final sent = await _sendEmail(
+              userEmail: userEmail,
+              merchant: receipt.merchant,
+              productNames: productNames,
+              expiryDate: receipt.warrantyExpiry!,
+              daysRemaining: reminderDay,
+            );
+            if (sent) await prefs.setBool(key, true);
+          }
         }
       }
 
