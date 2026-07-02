@@ -7,9 +7,6 @@ import pytesseract
 import httpx
 import json
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -37,11 +34,8 @@ else:
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL   = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
-# SMTP Email Configuration (Gmail)
-SMTP_EMAIL    = os.getenv("SMTP_EMAIL", "")       # e.g. receipto.notify@gmail.com
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")    # Gmail App Password (16-char, no spaces)
-SMTP_HOST     = "smtp.gmail.com"
-SMTP_PORT     = 587
+# Resend API (https://resend.com) — free, works on Render
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")  # Get from resend.com → API Keys
 
 
 # ─── Pydantic Models ────────────────────────────────────────────────────────
@@ -175,11 +169,11 @@ def _build_email_html(merchant: str, product_names: list, expiry_date: str, days
 
 @app.post("/send-warranty-email")
 async def send_warranty_email(payload: WarrantyEmailPayload):
-    """Send a warranty expiry / 3-day reminder email via Gmail SMTP."""
-    if not SMTP_EMAIL or not SMTP_PASSWORD:
+    """Send a warranty expiry / countdown reminder email via Resend API."""
+    if not RESEND_API_KEY:
         raise HTTPException(
             status_code=503,
-            detail="SMTP credentials not configured. Set SMTP_EMAIL and SMTP_PASSWORD env vars."
+            detail="Resend API key not configured. Set RESEND_API_KEY env var on Render."
         )
 
     subject, html_body = _build_email_html(
@@ -189,26 +183,33 @@ async def send_warranty_email(payload: WarrantyEmailPayload):
         days_remaining=payload.days_remaining,
     )
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"]    = f"Receipto Alerts <{SMTP_EMAIL}>"
-    msg["To"]      = payload.user_email
-    msg.attach(MIMEText(html_body, "html"))
-
     try:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.sendmail(SMTP_EMAIL, payload.user_email, msg.as_string())
-        return {"success": True, "message": f"Email sent to {payload.user_email}"}
-    except smtplib.SMTPAuthenticationError:
-        raise HTTPException(
-            status_code=401,
-            detail="SMTP authentication failed. Check SMTP_EMAIL and SMTP_PASSWORD env vars."
-        )
-    except smtplib.SMTPException as e:
-        raise HTTPException(status_code=500, detail=f"SMTP error: {str(e)}")
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": "Receipto Alerts <onboarding@resend.dev>",
+                    "to": [payload.user_email],
+                    "subject": subject,
+                    "html": html_body,
+                },
+                timeout=15.0,
+            )
+
+        if response.status_code in (200, 201):
+            return {"success": True, "message": f"Email sent to {payload.user_email}"}
+        else:
+            error_detail = response.json().get("message", response.text)
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Resend API error: {error_detail}"
+            )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
 
