@@ -41,7 +41,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   String _getFriendlyErrorMessage(Object error) {
     final errStr = error.toString().toLowerCase();
-    if (errStr.contains('invalid-credential') || errStr.contains('wrong-password') || errStr.contains('user-not-found')) {
+    if (errStr.contains('user-not-found')) {
+      return 'No account exists for this email. Please sign up.';
+    } else if (errStr.contains('invalid-credential') || errStr.contains('wrong-password')) {
       return 'Credentials mismatched. Please check your email or password.';
     } else if (errStr.contains('invalid-email')) {
       return 'The email address format is invalid.';
