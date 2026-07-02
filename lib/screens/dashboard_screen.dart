@@ -199,6 +199,13 @@ class DashboardScreen extends ConsumerWidget {
                       const SizedBox(width: 8),
                       _buildFilterChip(
                         context,
+                        label: 'Verification: ${ref.watch(verificationFilterProvider) ?? 'All'}',
+                        onTap: () => _showVerificationFilterDialog(context, ref),
+                        isActive: ref.watch(verificationFilterProvider) != null,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        context,
                         label: 'Sort: ${ref.watch(sortByProvider)}',
                         onTap: () => _showSortDialog(context, ref),
                         isActive: ref.watch(sortByProvider) != 'Newest',
@@ -458,23 +465,51 @@ class DashboardScreen extends ConsumerWidget {
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white),
                   ),
                   const SizedBox(height: 4),
-                  if (hasWarranty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: ReceiptoTheme.highlight.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(4),
+                  (() {
+                    final verification = receipt.verification;
+                    final status = verification?.status ?? 'Verified';
+
+                    Color badgeColor;
+                    IconData badgeIcon;
+                    switch (status) {
+                      case 'Verified':
+                        badgeColor = const Color(0xFF00FF66);
+                        badgeIcon = Icons.shield_rounded;
+                        break;
+                      case 'Review':
+                        badgeColor = const Color(0xFFFFB300);
+                        badgeIcon = Icons.warning_rounded;
+                        break;
+                      default:
+                        badgeColor = const Color(0xFFFF3333);
+                        badgeIcon = Icons.error_rounded;
+                    }
+
+                    return GestureDetector(
+                      onTap: () {
+                        _showVerificationBottomSheet(context, receipt);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: badgeColor.withOpacity(0.3), width: 1),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(badgeIcon, color: badgeColor, size: 8),
+                            const SizedBox(width: 4),
+                            Text(
+                              status,
+                              style: TextStyle(fontSize: 7, fontWeight: FontWeight.bold, color: badgeColor),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: const Text(
-                        'WARRANTY',
-                        style: TextStyle(fontSize: 7, fontWeight: FontWeight.bold, color: ReceiptoTheme.highlight),
-                      ),
-                    )
-                  else
-                    Text(
-                      receipt.category,
-                      style: const TextStyle(fontSize: 9, color: ReceiptoTheme.secondary),
-                    ),
+                    );
+                  })().animate().fade(duration: 300.ms).scale(begin: const Offset(0.8, 0.8), duration: 300.ms),
                 ],
               ),
             ],
@@ -557,6 +592,21 @@ class DashboardScreen extends ConsumerWidget {
       selectedItem: current ?? 'All',
       onSelect: (item) {
         ref.read(warrantyFilterProvider.notifier).state = item == 'All' ? null : item;
+      },
+    );
+  }
+
+  void _showVerificationFilterDialog(BuildContext context, WidgetRef ref) {
+    final current = ref.read(verificationFilterProvider);
+    final verificationStatuses = ['All', 'Verified', 'Review', 'Not Verified'];
+
+    _showSelectorBottomSheet(
+      context,
+      title: 'Filter by Verification Status',
+      items: verificationStatuses,
+      selectedItem: current ?? 'All',
+      onSelect: (item) {
+        ref.read(verificationFilterProvider.notifier).state = item == 'All' ? null : item;
       },
     );
   }
