@@ -7,6 +7,9 @@ abstract class ReceiptService {
   Stream<List<Receipt>> getReceiptsStream();
   Future<void> saveReceipt(Receipt receipt);
   Future<void> deleteReceipt(String id, String? imageUrl);
+  Future<void> restoreReceipt(String id);
+  Future<void> deleteReceiptPermanently(String id, String? imageUrl);
+  Future<void> purgeOldDeletedReceipts();
   Future<String> uploadReceiptImage(String receiptId, String localPath);
 }
 
@@ -42,6 +45,23 @@ class FirestoreReceiptService implements ReceiptService {
 
   @override
   Future<void> deleteReceipt(String id, String? imageUrl) async {
+    // Soft delete: set isDeleted to true and deletedAt to now
+    await _receiptsCollection.doc(id).update({
+      'isDeleted': true,
+      'deletedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  @override
+  Future<void> restoreReceipt(String id) async {
+    await _receiptsCollection.doc(id).update({
+      'isDeleted': false,
+      'deletedAt': null,
+    });
+  }
+
+  @override
+  Future<void> deleteReceiptPermanently(String id, String? imageUrl) async {
     // 1. Delete from Firestore
     await _receiptsCollection.doc(id).delete();
 
@@ -52,6 +72,29 @@ class FirestoreReceiptService implements ReceiptService {
       } catch (e) {
         print('Error deleting storage image from Supabase: $e');
       }
+    }
+  }
+
+  @override
+  Future<void> purgeOldDeletedReceipts() async {
+    try {
+      final snapshot = await _receiptsCollection.where('isDeleted', isEqualTo: true).get();
+      final now = DateTime.now();
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final deletedAtStr = data['deletedAt'];
+        if (deletedAtStr != null) {
+          final deletedAt = DateTime.tryParse(deletedAtStr);
+          if (deletedAt != null) {
+            final difference = now.difference(deletedAt).inDays;
+            if (difference >= 30) {
+              await deleteReceiptPermanently(data['receiptId'] ?? doc.id, data['receiptImageUrl']);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error purging old deleted receipts: $e');
     }
   }
 

@@ -54,6 +54,8 @@ class Receipt {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? createdBy;
+  final bool isDeleted;
+  final DateTime? deletedAt;
 
   Receipt({
     required this.receiptId,
@@ -79,6 +81,8 @@ class Receipt {
     this.createdAt,
     this.updatedAt,
     this.createdBy,
+    this.isDeleted = false,
+    this.deletedAt,
   });
 
   Receipt copyWith({
@@ -105,6 +109,8 @@ class Receipt {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? createdBy,
+    bool? isDeleted,
+    DateTime? deletedAt,
   }) {
     return Receipt(
       receiptId: receiptId ?? this.receiptId,
@@ -130,6 +136,8 @@ class Receipt {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       createdBy: createdBy ?? this.createdBy,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 
@@ -158,6 +166,8 @@ class Receipt {
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'createdBy': createdBy,
+      'isDeleted': isDeleted,
+      'deletedAt': deletedAt?.toIso8601String(),
     };
   }
 
@@ -187,6 +197,8 @@ class Receipt {
       createdAt: map['createdAt'] != null ? DateTime.tryParse(map['createdAt']) : null,
       updatedAt: map['updatedAt'] != null ? DateTime.tryParse(map['updatedAt']) : null,
       createdBy: map['createdBy'],
+      isDeleted: map['isDeleted'] ?? false,
+      deletedAt: map['deletedAt'] != null ? DateTime.tryParse(map['deletedAt']) : null,
     );
   }
 }

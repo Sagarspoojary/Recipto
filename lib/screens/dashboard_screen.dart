@@ -255,11 +255,11 @@ class DashboardScreen extends ConsumerWidget {
                       // Spending
                       Expanded(
                         child: SizedBox(
-                          height: 135,
+                          height: 145,
                           child: BentoCard(
                             glowColor: ReceiptoTheme.secondary,
                             child: Padding(
-                              padding: const EdgeInsets.all(16.0),
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -277,11 +277,11 @@ class DashboardScreen extends ConsumerWidget {
                       // Warranties
                       Expanded(
                         child: SizedBox(
-                          height: 135,
+                          height: 145,
                           child: BentoCard(
                             glowColor: ReceiptoTheme.primary,
                             child: Padding(
-                              padding: const EdgeInsets.all(16.0),
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -653,6 +653,10 @@ class DashboardScreen extends ConsumerWidget {
               ),
               child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 20),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_rounded, color: Colors.white60, size: 24),
+            onPressed: () => context.push('/trash'),
           ),
         ],
       ),

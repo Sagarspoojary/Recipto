@@ -44,8 +44,10 @@ final filteredAndSortedReceiptsProvider = Provider<List<Receipt>>((ref) {
     data: (list) {
       final now = DateTime.now();
 
-      // Apply Search & Filters
+      // Apply Search & Filters (only for non-deleted receipts)
       final filtered = list.where((receipt) {
+        if (receipt.isDeleted) return false;
+        
         // 1. Search Query Match
         final matchesSearch = query.isEmpty ||
             receipt.merchant.toLowerCase().contains(query) ||
@@ -130,7 +132,8 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
 
   return receiptsAsync.maybeWhen(
     data: (list) {
-      if (list.isEmpty) {
+      final activeList = list.where((r) => !r.isDeleted).toList();
+      if (activeList.isEmpty) {
         return {
           'totalReceipts': 0,
           'totalSpending': 0.0,
@@ -150,7 +153,7 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
       final categoryCount = <String, int>{};
       final now = DateTime.now();
 
-      for (final r in list) {
+      for (final r in activeList) {
         totalSpending += r.total;
         if (r.total > highestPurchase) {
           highestPurchase = r.total;
@@ -185,9 +188,9 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
       });
 
       return {
-        'totalReceipts': list.length,
+        'totalReceipts': activeList.length,
         'totalSpending': totalSpending,
-        'avgSpending': totalSpending / list.length,
+        'avgSpending': activeList.isEmpty ? 0.0 : totalSpending / activeList.length,
         'highestPurchase': highestPurchase,
         'activeWarranties': activeWarranties,
         'expiringSoon': expiringSoon,
@@ -205,5 +208,14 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
       'categoryCount': <String, int>{},
       'mostPurchasedCategory': 'None',
     },
+  );
+});
+
+// Stream provider for deleted receipts
+final trashReceiptsProvider = Provider<List<Receipt>>((ref) {
+  final receiptsAsync = ref.watch(receiptsStreamProvider);
+  return receiptsAsync.maybeWhen(
+    data: (list) => list.where((receipt) => receipt.isDeleted).toList(),
+    orElse: () => [],
   );
 });
