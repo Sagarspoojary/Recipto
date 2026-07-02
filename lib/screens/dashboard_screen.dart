@@ -7,16 +7,49 @@ import '../models/receipt.dart';
 import '../providers/receipt_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
+import '../services/warranty_email_service.dart';
 import '../widgets/bento_card.dart';
 import '../widgets/kinetic_typography.dart';
 import '../widgets/particle_atmosphere.dart';
 import '../widgets/warranty_status_indicator.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen>
+    with WidgetsBindingObserver {
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Re-check when the app comes back to the foreground
+    if (state == AppLifecycleState.resumed) {
+      final receiptsAsync = ref.read(receiptsStreamProvider);
+      receiptsAsync.whenData((receipts) {
+        WarrantyEmailService.checkAndNotify(
+          receipts.where((r) => !r.isDeleted).toList(),
+        );
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final receiptsAsync = ref.watch(receiptsStreamProvider);
 
     return Scaffold(
@@ -26,7 +59,15 @@ class DashboardScreen extends ConsumerWidget {
             children: [
               const Positioned.fill(child: KineticTypography()),
               receiptsAsync.when(
-                data: (receipts) => _buildDashboardContent(context, receipts, ref),
+                data: (receipts) {
+                  // Fire warranty email check silently on every fresh data load
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    WarrantyEmailService.checkAndNotify(
+                      receipts.where((r) => !r.isDeleted).toList(),
+                    );
+                  });
+                  return _buildDashboardContent(context, receipts, ref);
+                },
                 loading: () => const Center(
                   child: CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(ReceiptoTheme.secondary),
