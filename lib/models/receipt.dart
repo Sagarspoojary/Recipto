@@ -111,7 +111,6 @@ class Receipt {
     String? createdBy,
     bool? isDeleted,
     DateTime? deletedAt,
-    Verification? verification,
   }) {
     return Receipt(
       receiptId: receiptId ?? this.receiptId,
