@@ -68,10 +68,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   child: BentoCard(
                     glowColor: ReceiptoTheme.warning,
                     borderRadius: 32,
-                    child: Container(
-                      width: isTabletOrDesktop ? 450 : double.infinity,
-                      padding: const EdgeInsets.all(24.0),
-                      child: Form(
+                    child: SingleChildScrollView(
+                      child: Container(
+                        width: isTabletOrDesktop ? 450 : double.infinity,
+                        padding: const EdgeInsets.all(24.0),
+                        child: Form(
                         key: _formKey,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
