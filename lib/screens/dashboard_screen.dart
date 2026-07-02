@@ -255,7 +255,7 @@ class DashboardScreen extends ConsumerWidget {
                       // Spending
                       Expanded(
                         child: SizedBox(
-                          height: 120,
+                          height: 135,
                           child: BentoCard(
                             glowColor: ReceiptoTheme.secondary,
                             child: Padding(
@@ -277,7 +277,7 @@ class DashboardScreen extends ConsumerWidget {
                       // Warranties
                       Expanded(
                         child: SizedBox(
-                          height: 120,
+                          height: 135,
                           child: BentoCard(
                             glowColor: ReceiptoTheme.primary,
                             child: Padding(
@@ -653,10 +653,6 @@ class DashboardScreen extends ConsumerWidget {
               ),
               child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 20),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.analytics_outlined, color: Colors.white60, size: 24),
-            onPressed: () => context.push('/analytics'),
           ),
         ],
       ),
