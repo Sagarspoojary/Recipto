@@ -199,6 +199,24 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
           ? parsedPurchaseDate.toIso8601String().split('T')[0]
           : (_dateController.text.trim().isEmpty ? null : _dateController.text.trim());
 
+      String? calculatedExpiry;
+      if (_warrantyMonths != null && parsedPurchaseDate != null) {
+        // First check if AI returned a valid expiry date that we can parse
+        final aiExpiryStr = _data['warrantyExpiry']?.toString();
+        final parsedAiExpiry = aiExpiryStr != null ? parseCustomDate(aiExpiryStr) : null;
+        if (parsedAiExpiry != null) {
+          calculatedExpiry = parsedAiExpiry.toIso8601String().split('T')[0];
+        } else {
+          // Accurate calendar months addition (e.g. 12 months from July 2, 2025 is July 2, 2026)
+          final expiryDateTime = DateTime(
+            parsedPurchaseDate.year,
+            parsedPurchaseDate.month + _warrantyMonths!,
+            parsedPurchaseDate.day,
+          );
+          calculatedExpiry = expiryDateTime.toIso8601String().split('T')[0];
+        }
+      }
+
       // 3. Create Receipt Model
       final receipt = Receipt(
         receiptId: receiptId,
@@ -215,9 +233,7 @@ class _AiReviewScreenState extends ConsumerState<AiReviewScreen> {
         paymentMethod: _paymentController.text.trim().isEmpty ? null : _paymentController.text.trim(),
         category: _category ?? 'Others',
         warrantyMonths: _warrantyMonths,
-        warrantyExpiry: _warrantyMonths != null && parsedPurchaseDate != null
-            ? parsedPurchaseDate.add(Duration(days: _warrantyMonths! * 30)).toIso8601String().split('T')[0]
-            : null,
+        warrantyExpiry: calculatedExpiry,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         receiptImageUrl: imageUrl,
         createdAt: DateTime.now(),
