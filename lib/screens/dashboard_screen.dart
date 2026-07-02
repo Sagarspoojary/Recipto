@@ -10,6 +10,7 @@ import '../providers/profile_provider.dart';
 import '../widgets/bento_card.dart';
 import '../widgets/kinetic_typography.dart';
 import '../widgets/particle_atmosphere.dart';
+import '../widgets/warranty_status_indicator.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -401,21 +402,31 @@ class DashboardScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
-              // Receipt Thumbnail
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  color: Colors.white.withOpacity(0.03),
-                  child: receipt.receiptImageUrl != null && receipt.receiptImageUrl!.isNotEmpty
-                      ? Image.network(
-                          receipt.receiptImageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Icon(categoryIcon, color: ReceiptoTheme.secondary, size: 22),
-                        )
-                      : Icon(categoryIcon, color: ReceiptoTheme.secondary, size: 22),
-                ),
+              // Receipt Thumbnail & Warranty Indicators
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      color: Colors.white.withOpacity(0.03),
+                      child: receipt.receiptImageUrl != null && receipt.receiptImageUrl!.isNotEmpty
+                          ? Image.network(
+                              receipt.receiptImageUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Icon(categoryIcon, color: ReceiptoTheme.secondary, size: 22),
+                            )
+                          : Icon(categoryIcon, color: ReceiptoTheme.secondary, size: 22),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  WarrantyStatusIndicator(
+                    warrantyExpiry: receipt.warrantyExpiry,
+                    currentDate: DateTime.now(),
+                  ),
+                ],
               ),
               const SizedBox(width: 16),
               // Merchant Info
