@@ -79,6 +79,11 @@ async def extract_receipt_ai(payload: OcrPayload):
 Your task is to analyze raw OCR text extracted from receipts and invoices.
 Extract only factual information. Never guess. Never hallucinate. If any information is unavailable, return null.
 
+CRITICAL INSTRUCTIONS FOR WARRANTY:
+1. Look for a warranty block or keys like "Warranty Period", "Warranty Start Date", "Warranty End Date", "Warranty Expiry", or "Warranty Details".
+2. For "warrantyMonths": Convert any warranty period string into total months. E.g., "1 Year" -> 12, "2 Years" -> 24, "6 Months" -> 6. If no warranty is mentioned, return null.
+3. For "warrantyExpiry": Extract any specified warranty end date or expiry date. Preserve the raw date string from the receipt (e.g., "02-07-2027").
+
 Return ONLY a valid JSON object matching this schema (with no markdown wrappers or other text):
 {
   "merchant": "string or null",
