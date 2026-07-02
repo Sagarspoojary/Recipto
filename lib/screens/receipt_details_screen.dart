@@ -413,6 +413,59 @@ class ReceiptDetailsScreen extends ConsumerWidget {
                             const SizedBox(height: 16),
                             _buildSummaryRow('Warranty Expiry', receipt.warrantyExpiry ?? 'No Warranty'),
                             _buildSummaryRow('Warranty Duration', receipt.warrantyMonths != null ? '${receipt.warrantyMonths} Months' : 'None'),
+                            (() {
+                              if (receipt.warrantyExpiry == null) return const SizedBox.shrink();
+                              final expiry = DateTime.tryParse(receipt.warrantyExpiry!);
+                              if (expiry == null) return const SizedBox.shrink();
+                              final now = DateTime.now();
+                              // Set to midnight to compare days correctly
+                              final today = DateTime(now.year, now.month, now.day);
+                              final expiryDate = DateTime(expiry.year, expiry.month, expiry.day);
+                              final daysRemaining = expiryDate.difference(today).inDays;
+
+                              final isExpired = daysRemaining < 0;
+                              final isExpiringSoon = daysRemaining >= 0 && daysRemaining <= 30;
+
+                              final color = isExpired
+                                  ? const Color(0xFFFF3333)
+                                  : isExpiringSoon
+                                      ? const Color(0xFFFFB300)
+                                      : const Color(0xFF00FF66);
+
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 12.0),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: color.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: color.withOpacity(0.2), width: 1),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isExpired
+                                            ? Icons.error_outline_rounded
+                                            : Icons.alarm_on_rounded,
+                                        color: color,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        isExpired
+                                            ? 'Warranty Expired'
+                                            : '$daysRemaining days remaining',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: color,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            })(),
                             _buildSummaryRow('Merchant Address', receipt.merchantAddress ?? 'Not Provided', isMuted: true),
                             _buildSummaryRow('Merchant Phone', receipt.merchantPhone ?? 'Not Provided', isMuted: true),
                             _buildSummaryRow('Merchant Email', receipt.merchantEmail ?? 'Not Provided', isMuted: true),
