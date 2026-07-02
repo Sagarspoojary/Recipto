@@ -138,10 +138,43 @@ class _EditReceiptScreenState extends ConsumerState<EditReceiptScreen> {
         );
       }).toList();
 
+      DateTime? parseCustomDate(String input) {
+        final clean = input.trim();
+        if (clean.isEmpty) return null;
+
+        // 1. Try ISO YYYY-MM-DD
+        final iso = DateTime.tryParse(clean);
+        if (iso != null) return iso;
+
+        // 2. Try DD-MM-YYYY
+        final matchDash = RegExp(r'^(\d{1,2})-(\d{1,2})-(\d{4})$').firstMatch(clean);
+        if (matchDash != null) {
+          final d = int.parse(matchDash.group(1)!);
+          final m = int.parse(matchDash.group(2)!);
+          final y = int.parse(matchDash.group(3)!);
+          return DateTime(y, m, d);
+        }
+
+        // 3. Try DD/MM/YYYY
+        final matchSlash = RegExp(r'^(\d{1,2})/(\d{1,2})/(\d{4})$').firstMatch(clean);
+        if (matchSlash != null) {
+          final d = int.parse(matchSlash.group(1)!);
+          final m = int.parse(matchSlash.group(2)!);
+          final y = int.parse(matchSlash.group(3)!);
+          return DateTime(y, m, d);
+        }
+        return null;
+      }
+
+      final parsedPurchaseDate = parseCustomDate(_dateController.text);
+      final purchaseDateStr = parsedPurchaseDate != null 
+          ? parsedPurchaseDate.toIso8601String().split('T')[0]
+          : (_dateController.text.trim().isEmpty ? null : _dateController.text.trim());
+
       final updatedReceipt = widget.receipt.copyWith(
         merchant: _merchantController.text.trim(),
         invoiceNumber: _invoiceController.text.trim().isEmpty ? null : _invoiceController.text.trim(),
-        purchaseDate: _dateController.text.trim().isEmpty ? null : _dateController.text.trim(),
+        purchaseDate: purchaseDateStr,
         purchaseTime: _timeController.text.trim().isEmpty ? null : _timeController.text.trim(),
         products: productsList,
         subtotal: double.tryParse(_subtotalController.text) ?? 0.0,
@@ -151,10 +184,8 @@ class _EditReceiptScreenState extends ConsumerState<EditReceiptScreen> {
         paymentMethod: _paymentController.text.trim().isEmpty ? null : _paymentController.text.trim(),
         category: _category ?? 'Others',
         warrantyMonths: _warrantyMonths,
-        warrantyExpiry: _warrantyMonths != null && _dateController.text.trim().isNotEmpty
-            ? DateTime.tryParse(_dateController.text.trim())
-                ?.add(Duration(days: _warrantyMonths! * 30))
-                .toIso8601String().split('T')[0]
+        warrantyExpiry: _warrantyMonths != null && parsedPurchaseDate != null
+            ? parsedPurchaseDate.add(Duration(days: _warrantyMonths! * 30)).toIso8601String().split('T')[0]
             : null,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         updatedAt: DateTime.now(),
