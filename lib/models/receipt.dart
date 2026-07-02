@@ -56,7 +56,6 @@ class Receipt {
   final String? createdBy;
   final bool isDeleted;
   final DateTime? deletedAt;
-  final Verification? verification;
 
   Receipt({
     required this.receiptId,
@@ -84,7 +83,6 @@ class Receipt {
     this.createdBy,
     this.isDeleted = false,
     this.deletedAt,
-    this.verification,
   });
 
   Receipt copyWith({
@@ -141,7 +139,6 @@ class Receipt {
       createdBy: createdBy ?? this.createdBy,
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
-      verification: verification ?? this.verification,
     );
   }
 
@@ -172,7 +169,6 @@ class Receipt {
       'createdBy': createdBy,
       'isDeleted': isDeleted,
       'deletedAt': deletedAt?.toIso8601String(),
-      'verification': verification?.toMap(),
     };
   }
 
@@ -204,35 +200,6 @@ class Receipt {
       createdBy: map['createdBy'],
       isDeleted: map['isDeleted'] ?? false,
       deletedAt: map['deletedAt'] != null ? DateTime.tryParse(map['deletedAt']) : null,
-      verification: map['verification'] != null ? Verification.fromMap(Map<String, dynamic>.from(map['verification'])) : null,
     );
   }
-}
-
-class Verification {
-  final int trustScore;
-  final String status;
-  final String verifiedAt;
-  final Map<String, bool> checks;
-
-  Verification({
-    required this.trustScore,
-    required this.status,
-    required this.verifiedAt,
-    required this.checks,
-  });
-
-  Map<String, dynamic> toMap() => {
-        'trustScore': trustScore,
-        'status': status,
-        'verifiedAt': verifiedAt,
-        'checks': checks,
-      };
-
-  factory Verification.fromMap(Map<String, dynamic> map) => Verification(
-        trustScore: map['trustScore'] is int ? map['trustScore'] : (map['trustScore'] as num?)?.toInt() ?? 0,
-        status: map['status'] ?? 'Not Verified',
-        verifiedAt: map['verifiedAt'] ?? '',
-        checks: Map<String, bool>.from(map['checks'] ?? {}),
-      );
 }

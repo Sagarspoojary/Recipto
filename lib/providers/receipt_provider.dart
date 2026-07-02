@@ -29,7 +29,6 @@ final searchQueryProvider = StateProvider<String>((ref) => '');
 final selectedCategoryFilterProvider = StateProvider<String?>((ref) => null);
 final dateRangeFilterProvider = StateProvider<String?>((ref) => null); // null, "This Month", "Last Month", "This Year"
 final warrantyFilterProvider = StateProvider<String?>((ref) => null); // null, "Expired", "Expiring Soon"
-final verificationFilterProvider = StateProvider<String?>((ref) => null); // null, "Verified", "Review", "Not Verified"
 final sortByProvider = StateProvider<String>((ref) => 'Newest'); // "Newest", "Oldest", "Highest Price", "Lowest Price", "Merchant Name"
 
 // Combined filtered & sorted receipts list
@@ -39,7 +38,6 @@ final filteredAndSortedReceiptsProvider = Provider<List<Receipt>>((ref) {
   final selectedCategory = ref.watch(selectedCategoryFilterProvider);
   final dateRange = ref.watch(dateRangeFilterProvider);
   final warrantyStatus = ref.watch(warrantyFilterProvider);
-  final verificationFilter = ref.watch(verificationFilterProvider);
   final sortBy = ref.watch(sortByProvider);
 
   return receiptsAsync.maybeWhen(
@@ -50,12 +48,9 @@ final filteredAndSortedReceiptsProvider = Provider<List<Receipt>>((ref) {
       final filtered = list.where((receipt) {
         if (receipt.isDeleted) return false;
         
-        final recStatus = receipt.verification?.status ?? 'Verified';
-
         // 1. Search Query Match
         final matchesSearch = query.isEmpty ||
             receipt.merchant.toLowerCase().contains(query) ||
-            recStatus.toLowerCase().contains(query) ||
             (receipt.invoiceNumber != null && receipt.invoiceNumber!.toLowerCase().contains(query)) ||
             (receipt.notes != null && receipt.notes!.toLowerCase().contains(query)) ||
             receipt.category.toLowerCase().contains(query) ||
@@ -101,10 +96,7 @@ final filteredAndSortedReceiptsProvider = Provider<List<Receipt>>((ref) {
           matchesWarranty = false;
         }
 
-        // 5. Verification Filter Match
-        final matchesVerification = verificationFilter == null || recStatus == verificationFilter;
-
-        return matchesSearch && matchesCategory && matchesDate && matchesWarranty && matchesVerification;
+        return matchesSearch && matchesCategory && matchesDate && matchesWarranty;
       }).toList();
 
       // Apply Sorting

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/receipt.dart';
 
 class FastApiOcrService {
   // Production Render URL and Local dev fallbacks
@@ -54,26 +53,12 @@ class FastApiOcrService {
     }
   }
 
-  Future<String> runAiExtraction(
-    String ocrText, {
-    List<Receipt> existingReceipts = const [],
-    double ocrConfidence = 1.0,
-  }) async {
-    final payload = {
-      'text': ocrText,
-      'ocr_confidence': ocrConfidence,
-      'existing_receipts': existingReceipts.map((r) => {
-        'invoiceNumber': r.invoiceNumber,
-        'merchant': r.merchant,
-        'total': r.total,
-      }).toList(),
-    };
-
+  Future<String> runAiExtraction(String ocrText) async {
     try {
       final response = await http.post(
         Uri.parse('$_renderUrl/ai-extract'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
+        body: jsonEncode({'text': ocrText}),
       ).timeout(const Duration(seconds: 90));
       
       return _handleApiResponse(response);
@@ -88,7 +73,7 @@ class FastApiOcrService {
         final response = await http.post(
           Uri.parse('$_emulateUrl/ai-extract'),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(payload),
+          body: jsonEncode({'text': ocrText}),
         ).timeout(const Duration(seconds: 45));
         return _handleApiResponse(response);
       } catch (_) {
@@ -97,7 +82,7 @@ class FastApiOcrService {
           final response = await http.post(
             Uri.parse('$_localUrl/ai-extract'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(payload),
+            body: jsonEncode({'text': ocrText}),
           ).timeout(const Duration(seconds: 45));
           return _handleApiResponse(response);
         } catch (_) {}

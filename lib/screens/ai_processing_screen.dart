@@ -2,11 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../core/theme/theme.dart';
 import '../services/fastapi_ocr_service.dart';
-import '../models/receipt.dart';
 import '../widgets/bento_card.dart';
 import '../widgets/kinetic_typography.dart';
 import '../widgets/particle_atmosphere.dart';
@@ -63,25 +60,7 @@ class _AiProcessingScreenState extends State<AiProcessingScreen> {
         _phraseIndex = 0;
       });
 
-      // Fetch user's existing receipts from Firestore for duplicate verification check
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      List<Receipt> existingReceipts = [];
-      if (uid != null) {
-        final snapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .collection('receipts')
-            .get();
-        existingReceipts = snapshot.docs
-            .map((doc) => Receipt.fromMap(doc.data()))
-            .toList();
-      }
-
-      final jsonResult = await _apiService.runAiExtraction(
-        widget.ocrText,
-        existingReceipts: existingReceipts,
-        ocrConfidence: 0.98, // Pass default high mock confidence for verification
-      );
+      final jsonResult = await _apiService.runAiExtraction(widget.ocrText);
       
       _phraseTimer?.cancel();
       if (mounted) {
