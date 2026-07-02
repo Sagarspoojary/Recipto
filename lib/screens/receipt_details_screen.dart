@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:http/http.dart' as http;
 import '../core/theme/theme.dart';
 import '../models/receipt.dart';
 import '../providers/receipt_provider.dart';
@@ -52,6 +56,150 @@ class ReceiptDetailsScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _exportAsPdf(BuildContext context, Receipt receipt) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: ReceiptoTheme.secondary),
+      ),
+    );
+
+    try {
+      final pdf = pw.Document();
+      
+      pw.MemoryImage? pdfImage;
+      if (receipt.receiptImageUrl != null && receipt.receiptImageUrl!.isNotEmpty) {
+        try {
+          final response = await http.get(Uri.parse(receipt.receiptImageUrl!));
+          if (response.statusCode == 200) {
+            pdfImage = pw.MemoryImage(response.bodyBytes);
+          }
+        } catch (e) {
+          print('Failed to load image for PDF embedding: $e');
+        }
+      }
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context context) => [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('RECEIPTO - WARRANTY SLIP', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18, color: PdfColors.blueGrey800)),
+                  pw.Text(receipt.purchaseDate ?? '', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 16),
+            pw.Text(receipt.merchant, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 24, color: PdfColors.black)),
+            pw.SizedBox(height: 8),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('Invoice: ${receipt.invoiceNumber ?? 'N/A'}', style: const pw.TextStyle(fontSize: 11)),
+                pw.Text('Date: ${receipt.purchaseDate ?? 'N/A'}', style: const pw.TextStyle(fontSize: 11)),
+              ],
+            ),
+            pw.Divider(color: PdfColors.grey300),
+            pw.SizedBox(height: 12),
+            pw.Text('WARRANTY DETAILS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14, color: PdfColors.blueGrey700)),
+            pw.SizedBox(height: 6),
+            pw.Row(
+              children: [
+                pw.Text('Warranty Expiry: ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                pw.Text(receipt.warrantyExpiry ?? 'No active warranty'),
+              ],
+            ),
+            pw.SizedBox(height: 16),
+            pw.Text('ITEMIZED PRODUCTS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14, color: PdfColors.blueGrey700)),
+            pw.SizedBox(height: 8),
+            pw.Table(
+              border: pw.TableBorder.symmetric(inside: const pw.BorderSide(color: PdfColors.grey200, width: 0.5)),
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                  children: [
+                    pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Item Name', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
+                    pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Brand', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
+                    pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Qty', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
+                    pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Unit Price', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
+                    pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Total', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
+                  ],
+                ),
+                ...receipt.products.map((item) {
+                  return pw.TableRow(
+                    children: [
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(item.name, style: const pw.TextStyle(fontSize: 10))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(item.brand ?? '', style: const pw.TextStyle(fontSize: 10))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(item.quantity.toString(), style: const pw.TextStyle(fontSize: 10))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('INR ${item.unitPrice.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 10))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('INR ${item.totalPrice.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 10))),
+                    ],
+                  );
+                }),
+              ],
+            ),
+            pw.SizedBox(height: 16),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.end,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text('Subtotal: INR ${receipt.subtotal.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('GST: INR ${receipt.gst.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Discount: INR ${receipt.discount.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Divider(color: PdfColors.grey400, thickness: 1),
+                    pw.Text('Total Paid: INR ${receipt.total.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 13)),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      if (pdfImage != null) {
+        pdf.addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat.a4,
+            build: (pw.Context context) {
+              return pw.Center(
+                child: pw.Column(
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    pw.Text('ATTACHED RECEIPT IMAGE', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14, color: PdfColors.blueGrey800)),
+                    pw.SizedBox(height: 16),
+                    pw.Container(
+                      height: 500,
+                      child: pw.Image(pdfImage!),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      }
+
+      Navigator.pop(context);
+
+      await Printing.sharePdf(
+        bytes: await pdf.save(),
+        filename: 'receipt_${receipt.merchant.replaceAll(' ', '_')}_${receipt.receiptId}.pdf',
+      );
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to generate PDF: $e'), backgroundColor: ReceiptoTheme.error),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasWarranty = receipt.warrantyExpiry != null;
@@ -78,6 +226,10 @@ class ReceiptDetailsScreen extends ConsumerWidget {
                         ),
                         Row(
                           children: [
+                            IconButton(
+                              icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
+                              onPressed: () => _exportAsPdf(context, receipt),
+                            ),
                             IconButton(
                               icon: const Icon(Icons.edit_rounded, color: Colors.white),
                               onPressed: () {
