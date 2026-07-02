@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -226,6 +227,10 @@ class ReceiptDetailsScreen extends ConsumerWidget {
                         ),
                         Row(
                           children: [
+                            IconButton(
+                              icon: const Icon(Icons.share_rounded, color: Colors.white),
+                              onPressed: () => _shareReceipt(receipt),
+                            ),
                             IconButton(
                               icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
                               onPressed: () => _exportAsPdf(context, receipt),
@@ -467,6 +472,28 @@ class ReceiptDetailsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  void _shareReceipt(Receipt receipt) {
+    final buffer = StringBuffer();
+    buffer.writeln('Receipt details from ${receipt.merchant}');
+    if (receipt.invoiceNumber != null) {
+      buffer.writeln('Invoice No: ${receipt.invoiceNumber}');
+    }
+    if (receipt.purchaseDate != null) {
+      buffer.writeln('Date: ${receipt.purchaseDate}');
+    }
+    buffer.writeln('Total Amount: ₹${receipt.total.toStringAsFixed(2)}');
+    if (receipt.products.isNotEmpty) {
+      buffer.writeln('\nItems:');
+      for (final item in receipt.products) {
+        buffer.writeln('- ${item.name} (${item.quantity}x) : ₹${item.totalPrice.toStringAsFixed(2)}');
+      }
+    }
+    if (receipt.receiptImageUrl != null && receipt.receiptImageUrl!.isNotEmpty) {
+      buffer.writeln('\nReceipt Image: ${receipt.receiptImageUrl}');
+    }
+    Share.share(buffer.toString(), subject: 'Receipt from ${receipt.merchant}');
   }
 
   void _showFullscreenImage(BuildContext context, String url) {
