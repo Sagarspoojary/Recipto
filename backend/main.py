@@ -34,8 +34,9 @@ else:
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL   = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
-# Resend API (https://resend.com) — free, works on Render
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")  # Get from resend.com → API Keys
+# Brevo (formerly Sendinblue) — free, 300 emails/day, sends to ANY email, no domain needed
+BREVO_API_KEY      = os.getenv("BREVO_API_KEY", "")       # Get from brevo.com → SMTP & API → API Keys
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "") # Verified sender email on Brevo
 
 
 # ─── Pydantic Models ────────────────────────────────────────────────────────
@@ -169,11 +170,11 @@ def _build_email_html(merchant: str, product_names: list, expiry_date: str, days
 
 @app.post("/send-warranty-email")
 async def send_warranty_email(payload: WarrantyEmailPayload):
-    """Send a warranty expiry / countdown reminder email via Resend API."""
-    if not RESEND_API_KEY:
+    """Send a warranty expiry / countdown reminder email via Brevo API."""
+    if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
         raise HTTPException(
             status_code=503,
-            detail="Resend API key not configured. Set RESEND_API_KEY env var on Render."
+            detail="Brevo credentials not configured. Set BREVO_API_KEY and BREVO_SENDER_EMAIL env vars."
         )
 
     subject, html_body = _build_email_html(
@@ -186,16 +187,19 @@ async def send_warranty_email(payload: WarrantyEmailPayload):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                "https://api.resend.com/emails",
+                "https://api.brevo.com/v3/smtp/email",
                 headers={
-                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "api-key": BREVO_API_KEY,
                     "Content-Type": "application/json",
                 },
                 json={
-                    "from": "Receipto Alerts <onboarding@resend.dev>",
-                    "to": [payload.user_email],
+                    "sender": {
+                        "name": "Receipto Alerts",
+                        "email": BREVO_SENDER_EMAIL,
+                    },
+                    "to": [{"email": payload.user_email}],
                     "subject": subject,
-                    "html": html_body,
+                    "htmlContent": html_body,
                 },
                 timeout=15.0,
             )
@@ -206,7 +210,7 @@ async def send_warranty_email(payload: WarrantyEmailPayload):
             error_detail = response.json().get("message", response.text)
             raise HTTPException(
                 status_code=response.status_code,
-                detail=f"Resend API error: {error_detail}"
+                detail=f"Brevo API error: {error_detail}"
             )
     except HTTPException:
         raise
