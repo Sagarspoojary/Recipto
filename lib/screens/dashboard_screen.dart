@@ -323,11 +323,14 @@ class DashboardScreen extends ConsumerWidget {
                     'RECENT RECEIPTS',
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1.5),
                   ),
-                  if (filteredReceipts.length != allReceipts.length)
-                    Text(
-                      'Showing ${filteredReceipts.length} of ${allReceipts.length}',
+                  Builder(builder: (context) {
+                    final nonDeletedTotal = allReceipts.where((r) => !r.isDeleted).length;
+                    if (filteredReceipts.length == nonDeletedTotal) return const SizedBox.shrink();
+                    return Text(
+                      'Showing ${filteredReceipts.length} of $nonDeletedTotal',
                       style: const TextStyle(fontSize: 10, color: ReceiptoTheme.highlight),
-                    ),
+                    );
+                  }),
                 ],
               ),
             ),
