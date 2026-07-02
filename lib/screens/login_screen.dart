@@ -44,7 +44,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (errStr.contains('user-not-found')) {
       return 'No account exists for this email. Please sign up.';
     } else if (errStr.contains('invalid-credential') || errStr.contains('wrong-password')) {
-      return 'Credentials mismatched. Please check your email or password.';
+      return 'Credentials mismatched. If you do not have an account, please sign up.';
     } else if (errStr.contains('invalid-email')) {
       return 'The email address format is invalid.';
     } else if (errStr.contains('too-many-requests')) {

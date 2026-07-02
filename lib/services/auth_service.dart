@@ -324,15 +324,6 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<AppUser?> signInWithEmailAndPassword(String email, String password) async {
     try {
-      // Explicitly check if the email has any registered sign-in methods
-      final methods = await _auth.fetchSignInMethodsForEmail(email);
-      if (methods.isEmpty) {
-        throw FirebaseAuthException(
-          code: 'user-not-found',
-          message: 'No user record corresponding to this identifier. The user may have been deleted.',
-        );
-      }
-
       final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -352,13 +343,6 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Future<void> sendPasswordReset(String email) async {
-    final methods = await _auth.fetchSignInMethodsForEmail(email);
-    if (methods.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'user-not-found',
-        message: 'No user record corresponding to this identifier. The user may have been deleted.',
-      );
-    }
     await _auth.sendPasswordResetEmail(email: email);
   }
 
