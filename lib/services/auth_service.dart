@@ -360,6 +360,9 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<void> signOut() async {
     await _auth.signOut();
+    try {
+      await _googleSignIn.disconnect();
+    } catch (_) {}
     await _googleSignIn.signOut();
   }
 }
