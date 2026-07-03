@@ -22,6 +22,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with WidgetsBindingObserver {
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -103,6 +104,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final activeWarranties = stats['activeWarranties'] as int? ?? 0;
     final expiringSoon = stats['expiringSoon'] as int? ?? 0;
 
+    // Filter warranties for Tab 0 (Home) display
+    final warrantyReceipts = allReceipts
+        .where((r) => !r.isDeleted && r.warrantyExpiry != null)
+        .toList();
+
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
@@ -117,7 +123,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'RECEIPTO',
+                      _currentIndex == 0 ? 'RECEIPTO' : 'MY RECEIPTS',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
@@ -133,7 +139,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      greeting,
+                      _currentIndex == 0 ? greeting : 'Search and filter your receipts',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -184,216 +190,262 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
         ),
 
-        // Search Bar & Filters Chips
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              children: [
-                // Search Input Field
-                TextField(
-                  onChanged: (val) => ref.read(searchQueryProvider.notifier).state = val,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: 'Search merchant, product, category...',
-                    hintStyle: const TextStyle(color: Colors.white38),
-                    prefixIcon: const Icon(Icons.search_rounded, color: ReceiptoTheme.secondary),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.03),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: ReceiptoTheme.secondary),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Filtering Row
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: Row(
-                    children: [
-                      _buildFilterChip(
-                        context,
-                        label: 'Category: ${ref.watch(selectedCategoryFilterProvider) ?? 'All'}',
-                        onTap: () => _showCategoryFilterDialog(context, ref),
-                        isActive: ref.watch(selectedCategoryFilterProvider) != null,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildFilterChip(
-                        context,
-                        label: 'Date: ${ref.watch(dateRangeFilterProvider) ?? 'All'}',
-                        onTap: () => _showDateRangeFilterDialog(context, ref),
-                        isActive: ref.watch(dateRangeFilterProvider) != null,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildFilterChip(
-                        context,
-                        label: 'Warranty: ${ref.watch(warrantyFilterProvider) ?? 'All'}',
-                        onTap: () => _showWarrantyFilterDialog(context, ref),
-                        isActive: ref.watch(warrantyFilterProvider) != null,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildFilterChip(
-                        context,
-                        label: 'Sort: ${ref.watch(sortByProvider)}',
-                        onTap: () => _showSortDialog(context, ref),
-                        isActive: ref.watch(sortByProvider) != 'Newest',
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SliverToBoxAdapter(child: SizedBox(height: 20)),
-
-        if (allReceipts.isEmpty) ...[
-          // Empty State illustration
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.receipt_long_outlined,
-                      size: 96,
-                      color: Colors.white.withOpacity(0.12),
-                    ).animate().scale(delay: 200.ms, duration: 500.ms),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'No receipts yet',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Tap the Scan button to scan your first receipt.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: Colors.white38),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ] else ...[
-          // Bento Statistics Row
+        if (_currentIndex == 0) ...[
+          // ── TAB 0: HOME / STATISTICS ───────────────────────────────────────
+          const SliverToBoxAdapter(child: SizedBox(height: 10)),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             sliver: SliverToBoxAdapter(
-              child: Column(
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      // Spending
-                      Expanded(
-                        child: SizedBox(
-                          height: 145,
-                          child: BentoCard(
-                            glowColor: ReceiptoTheme.secondary,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('TOTAL SPENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1)),
-                                  Text('₹${totalSpending.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
-                                  Text('$totalReceipts Receipts Saved', style: const TextStyle(fontSize: 9, color: ReceiptoTheme.highlight)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Warranties
-                      Expanded(
-                        child: SizedBox(
-                          height: 145,
-                          child: BentoCard(
-                            glowColor: ReceiptoTheme.primary,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('ACTIVE WARRANTIES', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1)),
-                                  Text('$activeWarranties Items', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
-                                  Text(
-                                    expiringSoon > 0 ? '$expiringSoon Expiring Soon' : 'All secure',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      color: expiringSoon > 0 ? Colors.amber : ReceiptoTheme.secondary,
+                  // Spending Card
+                  Expanded(
+                    child: SizedBox(
+                      height: 145,
+                      child: BentoCard(
+                        glowColor: ReceiptoTheme.secondary,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('TOTAL SPENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1)),
+                              const SizedBox(height: 8),
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      '₹${totalSpending.toStringAsFixed(0)}',
+                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 8),
+                              Text('$totalReceipts Receipts Saved', style: const TextStyle(fontSize: 9, color: ReceiptoTheme.highlight)),
+                            ],
                           ),
                         ),
                       ),
-                    ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Warranties Card
+                  Expanded(
+                    child: SizedBox(
+                      height: 145,
+                      child: BentoCard(
+                        glowColor: ReceiptoTheme.primary,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('ACTIVE WARRANTIES', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1)),
+                              const SizedBox(height: 8),
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      '$activeWarranties Items',
+                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                expiringSoon > 0 ? '$expiringSoon Expiring Soon' : 'All secure',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: expiringSoon > 0 ? Colors.amber : ReceiptoTheme.secondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-          // Recent Receipts Header
+          // Section header for active warranties
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'RECENT RECEIPTS',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1.5),
+              child: Text(
+                'WARRANTY PRODUCTS',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white.withOpacity(0.6), letterSpacing: 1.5),
+              ),
+            ),
+          ),
+
+          if (warrantyReceipts.isEmpty) ...[
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.verified_user_outlined,
+                        size: 64,
+                        color: Colors.white.withOpacity(0.12),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No warranty items',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white60),
+                      ),
+                    ],
                   ),
-                  Builder(builder: (context) {
-                    final nonDeletedTotal = allReceipts.where((r) => !r.isDeleted).length;
-                    if (filteredReceipts.length == nonDeletedTotal) return const SizedBox.shrink();
-                    return Text(
-                      'Showing ${filteredReceipts.length} of $nonDeletedTotal',
-                      style: const TextStyle(fontSize: 10, color: ReceiptoTheme.highlight),
+                ),
+              ),
+            ),
+          ] else ...[
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final receipt = warrantyReceipts[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: _buildReceiptListItem(context, receipt),
                     );
-                  }),
+                  },
+                  childCount: warrantyReceipts.length,
+                ),
+              ),
+            ),
+          ],
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+        ] else ...[
+          // ── TAB 1: RECEIPTS LIST & SEARCH ───────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                children: [
+                  // Search Input Field
+                  TextField(
+                    onChanged: (val) => ref.read(searchQueryProvider.notifier).state = val,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Search merchant, product, category...',
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      prefixIcon: const Icon(Icons.search_rounded, color: ReceiptoTheme.secondary),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.03),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: ReceiptoTheme.secondary),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Filtering Row
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: [
+                        _buildFilterChip(
+                          context,
+                          label: 'Category: ${ref.watch(selectedCategoryFilterProvider) ?? 'All'}',
+                          onTap: () => _showCategoryFilterDialog(context, ref),
+                          isActive: ref.watch(selectedCategoryFilterProvider) != null,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterChip(
+                          context,
+                          label: 'Date: ${ref.watch(dateRangeFilterProvider) ?? 'All'}',
+                          onTap: () => _showDateRangeFilterDialog(context, ref),
+                          isActive: ref.watch(dateRangeFilterProvider) != null,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterChip(
+                          context,
+                          label: 'Warranty: ${ref.watch(warrantyFilterProvider) ?? 'All'}',
+                          onTap: () => _showWarrantyFilterDialog(context, ref),
+                          isActive: ref.watch(warrantyFilterProvider) != null,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterChip(
+                          context,
+                          label: 'Sort: ${ref.watch(sortByProvider)}',
+                          onTap: () => _showSortDialog(context, ref),
+                          isActive: ref.watch(sortByProvider) != 'Newest',
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
 
-          // Receipts List View
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final receipt = filteredReceipts[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: _buildReceiptListItem(context, receipt),
-                  );
-                },
-                childCount: filteredReceipts.length,
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+          if (filteredReceipts.isEmpty) ...[
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.receipt_long_outlined,
+                        size: 96,
+                        color: Colors.white.withOpacity(0.12),
+                      ).animate().scale(delay: 200.ms, duration: 500.ms),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'No receipts found',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          ] else ...[
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final receipt = filteredReceipts[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: _buildReceiptListItem(context, receipt),
+                    );
+                  },
+                  childCount: filteredReceipts.length,
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          ],
         ],
       ],
     );
@@ -691,8 +743,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           IconButton(
-            icon: const Icon(Icons.dashboard_rounded, color: ReceiptoTheme.secondary, size: 24),
-            onPressed: () {},
+            icon: Icon(
+              Icons.home_rounded,
+              color: _currentIndex == 0 ? ReceiptoTheme.secondary : Colors.white60,
+              size: 24,
+            ),
+            onPressed: () {
+              setState(() {
+                _currentIndex = 0;
+              });
+            },
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.dashboard_rounded,
+              color: _currentIndex == 1 ? ReceiptoTheme.secondary : Colors.white60,
+              size: 24,
+            ),
+            onPressed: () {
+              setState(() {
+                _currentIndex = 1;
+              });
+            },
           ),
           // Floating Scan button
           GestureDetector(
