@@ -148,43 +148,44 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.logout_rounded, color: Colors.white70),
-                      onPressed: () async {
-                        await ref.read(authProvider.notifier).signOut();
-                        if (context.mounted) {
-                          context.go('/login');
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => context.push('/profile'),
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: ReceiptoTheme.secondary.withOpacity(0.5), width: 1.5),
-                        ),
-                        child: CircleAvatar(
-                          radius: 20,
-                          backgroundColor: Colors.white.withOpacity(0.05),
-                          backgroundImage: profile?.photoURL != null
-                              ? NetworkImage(profile!.photoURL!)
-                              : null,
-                          child: profile?.photoURL == null
-                              ? Text(
-                                  cleanName.isNotEmpty ? cleanName[0].toUpperCase() : '?',
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-                                )
-                              : null,
+                if (_currentIndex == 0)
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.logout_rounded, color: Colors.white70),
+                        onPressed: () async {
+                          await ref.read(authProvider.notifier).signOut();
+                          if (context.mounted) {
+                            context.go('/login');
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => context.push('/profile'),
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: ReceiptoTheme.secondary.withOpacity(0.5), width: 1.5),
+                          ),
+                          child: CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.white.withOpacity(0.05),
+                            backgroundImage: profile?.photoURL != null
+                                ? NetworkImage(profile!.photoURL!)
+                                : null,
+                            child: profile?.photoURL == null
+                                ? Text(
+                                    cleanName.isNotEmpty ? cleanName[0].toUpperCase() : '?',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                  )
+                                : null,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
               ],
             ),
           ),
