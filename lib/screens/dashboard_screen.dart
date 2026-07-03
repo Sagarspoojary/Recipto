@@ -276,7 +276,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       // Left Card: Total Spending
                       Expanded(
                         child: SizedBox(
-                          height: 130,
+                          height: 140,
                           child: BentoCard(
                             glowColor: Colors.tealAccent,
                             child: Padding(
@@ -317,7 +317,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       // Right Card: Receipts Scanned
                       Expanded(
                         child: SizedBox(
-                          height: 130,
+                          height: 140,
                           child: BentoCard(
                             glowColor: Colors.blueAccent,
                             child: Padding(
@@ -366,19 +366,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.shield_outlined, color: Colors.cyanAccent[400], size: 20),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      'Warranty Protection',
-                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                                    ),
-                                  ],
+                                Icon(Icons.shield_outlined, color: Colors.cyanAccent[400], size: 20),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Warranty Protection',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                                 ),
-                                Icon(Icons.chevron_right_rounded, color: Colors.white.withOpacity(0.5), size: 20),
                               ],
                             ),
                             const SizedBox(height: 16),
