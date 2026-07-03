@@ -127,7 +127,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'Receipto',
+                            'My Receipto',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
