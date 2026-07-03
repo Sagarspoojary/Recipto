@@ -99,8 +99,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final stats = ref.watch(dashboardStatsProvider);
     final filteredReceipts = ref.watch(filteredAndSortedReceiptsProvider);
 
+    final totalSpending = stats['totalSpending'] as double? ?? 0.0;
+    final totalReceipts = stats['totalReceipts'] as int? ?? 0;
     final monthlySpending = stats['monthlySpending'] as double? ?? 0.0;
     final monthlyReceipts = stats['monthlyReceipts'] as int? ?? 0;
+    final activeWarranties = stats['activeWarranties'] as int? ?? 0;
+    final expiringSoon = stats['expiringSoon'] as int? ?? 0;
     final expiredWarranties = stats['expiredWarranties'] as int? ?? 0;
     final insights = (stats['insights'] as List<dynamic>?)?.cast<String>() ?? [];
 
@@ -329,7 +333,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                         Expanded(
                                           child: Text(
                                             insight,
-                                            style: const TextStyle(fontSize: 12, color: Colors.white80, height: 1.3),
+                                            style: const TextStyle(fontSize: 12, color: Colors.white70, height: 1.3),
                                           ),
                                         ),
                                       ],
