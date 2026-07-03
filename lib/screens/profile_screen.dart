@@ -77,7 +77,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     _loadedUid = profile.uid;
     _nameController.text = profile.fullName;
-    _emailController.text = authEmail ?? profile.email;
+    
+    // Explicitly check for null or empty string before falling back to profile.email
+    _emailController.text = (authEmail != null && authEmail.isNotEmpty) ? authEmail : profile.email;
+    
     _phoneController.text = profile.phoneNumber;
     _dobController.text = profile.dateOfBirth;
     _countryController.text = profile.country;
