@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../models/receipt.dart';
@@ -29,9 +30,21 @@ class WarrantyEmailService {
       return;
     }
 
-    final userEmail = user.email;
+    String? userEmail = user.email;
     if (userEmail == null || userEmail.isEmpty) {
-      print('WarrantyEmailService: User email is empty or null.');
+      print('WarrantyEmailService: Auth email is empty, fetching from Firestore profile...');
+      try {
+        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        if (doc.exists && doc.data() != null) {
+          userEmail = doc.data()?['email'] as String?;
+        }
+      } catch (e) {
+        print('WarrantyEmailService: Error fetching Firestore profile email: $e');
+      }
+    }
+
+    if (userEmail == null || userEmail.isEmpty) {
+      print('WarrantyEmailService: User email is empty or null after Firestore check.');
       return;
     }
 
