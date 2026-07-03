@@ -64,8 +64,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     super.dispose();
   }
 
+  String? _loadedUid;
+
   void _populateFields(UserProfile? profile) {
-    if (profile == null || _initialized) return;
+    if (profile == null) return;
+    if (_initialized && _loadedUid == profile.uid) return;
+
+    _loadedUid = profile.uid;
     _nameController.text = profile.fullName;
     _emailController.text = FirebaseAuth.instance.currentUser?.email ?? profile.email;
     _phoneController.text = profile.phoneNumber;
