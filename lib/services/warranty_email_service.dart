@@ -81,7 +81,7 @@ class WarrantyEmailService {
       // ── Day-countdown Reminders: 3 days, 2 days, 1 day ────────────────
       for (final reminderDay in [3, 2, 1]) {
         if (daysRemaining == reminderDay) {
-          final key = '${_prefix3Day}${reminderDay}d_$receiptId';
+          final key = '${_prefix3Day}${reminderDay}d_${userEmail}_$receiptId';
           if (prefs.getBool(key) != true) {
             print('WarrantyEmailService: Sending $reminderDay-day reminder email to $userEmail for ${receipt.merchant}...');
             final sent = await _sendEmail(
@@ -96,14 +96,14 @@ class WarrantyEmailService {
               await prefs.setBool(key, true);
             }
           } else {
-            print('WarrantyEmailService: $reminderDay-day reminder email already sent for receipt ID $receiptId.');
+            print('WarrantyEmailService: $reminderDay-day reminder email already sent for receipt ID $receiptId to $userEmail.');
           }
         }
       }
 
       // ── Expiry Notification (on or after expiry day) ────────────────────
       if (daysRemaining <= 0) {
-        final key = '$_prefixExpiry$receiptId';
+        final key = '$_prefixExpiry${userEmail}_$receiptId';
         if (prefs.getBool(key) != true) {
           print('WarrantyEmailService: Sending expiry notification email to $userEmail for ${receipt.merchant}...');
           final sent = await _sendEmail(
@@ -118,7 +118,7 @@ class WarrantyEmailService {
             await prefs.setBool(key, true);
           }
         } else {
-          print('WarrantyEmailService: Expiry email already sent for receipt ID $receiptId.');
+          print('WarrantyEmailService: Expiry email already sent for receipt ID $receiptId to $userEmail.');
         }
       }
     }
