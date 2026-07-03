@@ -1028,6 +1028,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 20),
             ),
           ),
+          // Analytics Button (immediately to the right of Scanner)
+          GestureDetector(
+            onTap: () => context.push('/analytics'),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
+                border: Border.all(color: ReceiptoTheme.secondary.withOpacity(0.3), width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: ReceiptoTheme.secondary.withOpacity(0.15),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.query_stats_rounded, color: Colors.white, size: 20),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.delete_sweep_rounded, color: Colors.white60, size: 24),
             onPressed: () => context.push('/trash'),
