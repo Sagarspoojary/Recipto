@@ -70,9 +70,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (profile == null) return;
     if (_initialized && _loadedUid == profile.uid) return;
 
+    final authEmail = FirebaseAuth.instance.currentUser?.email;
+    print('PROFILE_DEBUG: FirebaseAuth email = "$authEmail"');
+    print('PROFILE_DEBUG: Firestore profile email = "${profile.email}"');
+    print('PROFILE_DEBUG: profile.uid = "${profile.uid}"');
+
     _loadedUid = profile.uid;
     _nameController.text = profile.fullName;
-    _emailController.text = FirebaseAuth.instance.currentUser?.email ?? profile.email;
+    _emailController.text = authEmail ?? profile.email;
     _phoneController.text = profile.phoneNumber;
     _dobController.text = profile.dateOfBirth;
     _countryController.text = profile.country;
