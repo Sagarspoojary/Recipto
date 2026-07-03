@@ -173,6 +173,13 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
       final categorySpendingCurrent = <String, double>{};
       final categorySpendingPrev = <String, double>{};
 
+      // Weekly spending histogram for current month (4 slots)
+      final weeklySpending = <double>[0.0, 0.0, 0.0, 0.0];
+
+      // Find next expiring warranty
+      Receipt? nextExpiringReceipt;
+      int minDaysLeft = 999999;
+
       for (final r in activeList) {
         totalSpending += r.total;
         categoryCount[r.category] = (categoryCount[r.category] ?? 0) + 1;
@@ -185,6 +192,18 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
             monthlySpending += r.total;
             monthlyReceipts++;
             categorySpendingCurrent[r.category] = (categorySpendingCurrent[r.category] ?? 0.0) + r.total;
+            
+            // Weekly histogram placement
+            final day = pDate.day;
+            if (day <= 7) {
+              weeklySpending[0] += r.total;
+            } else if (day <= 14) {
+              weeklySpending[1] += r.total;
+            } else if (day <= 21) {
+              weeklySpending[2] += r.total;
+            } else {
+              weeklySpending[3] += r.total;
+            }
           }
           // Check if in previous month
           else if (pDate.isAfter(prevMonthStart.subtract(const Duration(seconds: 1))) &&
@@ -200,6 +219,17 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
               monthlySpending += r.total;
               monthlyReceipts++;
               categorySpendingCurrent[r.category] = (categorySpendingCurrent[r.category] ?? 0.0) + r.total;
+              
+              final day = cDate.day;
+              if (day <= 7) {
+                weeklySpending[0] += cDate.day;
+              } else if (day <= 14) {
+                weeklySpending[1] += cDate.day;
+              } else if (day <= 21) {
+                weeklySpending[2] += cDate.day;
+              } else {
+                weeklySpending[3] += cDate.day;
+              }
             } else if (cDate.isAfter(prevMonthStart.subtract(const Duration(seconds: 1))) &&
                        cDate.isBefore(prevMonthEnd.add(const Duration(seconds: 1)))) {
               prevMonthlySpending += r.total;
@@ -218,11 +248,21 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
               if (daysLeft <= 30) {
                 expiringSoonWarranties++;
               }
+              if (daysLeft < minDaysLeft) {
+                minDaysLeft = daysLeft;
+                nextExpiringReceipt = r;
+              }
             } else {
               expiredWarranties++;
             }
           }
         }
+      }
+
+      // Calculate trend percentage
+      double trendPercentage = 0.0;
+      if (prevMonthlySpending > 0) {
+        trendPercentage = ((monthlySpending - prevMonthlySpending) / prevMonthlySpending * 100);
       }
 
       // Generate AI Insights dynamically
@@ -237,7 +277,7 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
 
       // 2. Spending Trend Insight
       if (prevMonthlySpending > 0) {
-        final diffPercent = ((monthlySpending - prevMonthlySpending) / prevMonthlySpending * 100).round();
+        final diffPercent = trendPercentage.round();
         if (diffPercent > 0) {
           insights.add('Total spending increased by $diffPercent% compared to last month.');
         } else if (diffPercent < 0) {
@@ -301,6 +341,10 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
         'activeWarranties': activeWarranties,
         'expiringSoon': expiringSoonWarranties,
         'expiredWarranties': expiredWarranties,
+        'trendPercentage': trendPercentage,
+        'weeklySpending': weeklySpending,
+        'nextExpiringMerchant': nextExpiringReceipt?.merchant ?? '',
+        'nextExpiringDaysLeft': minDaysLeft == 999999 ? 0 : minDaysLeft,
         'insights': insights,
         'categoryCount': categoryCount,
         'mostPurchasedCategory': mostPurchasedCat,
@@ -314,6 +358,10 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
       'activeWarranties': 0,
       'expiringSoon': 0,
       'expiredWarranties': 0,
+      'trendPercentage': 0.0,
+      'weeklySpending': <double>[0.0, 0.0, 0.0, 0.0],
+      'nextExpiringMerchant': '',
+      'nextExpiringDaysLeft': 0,
       'insights': <String>[],
       'categoryCount': <String, int>{},
       'mostPurchasedCategory': 'None',
