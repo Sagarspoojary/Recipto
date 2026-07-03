@@ -133,34 +133,80 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
   return receiptsAsync.maybeWhen(
     data: (list) {
       final activeList = list.where((r) => !r.isDeleted).toList();
-      if (activeList.isEmpty) {
-        return {
-          'totalReceipts': 0,
-          'totalSpending': 0.0,
-          'avgSpending': 0.0,
-          'highestPurchase': 0.0,
-          'activeWarranties': 0,
-          'expiringSoon': 0,
-          'categoryCount': <String, int>{},
-          'mostPurchasedCategory': 'None',
-        };
+      
+      final now = DateTime.now();
+      final currentMonthStart = DateTime(now.year, now.month, 1);
+      final prevMonthStart = DateTime(now.year, now.month - 1, 1);
+      final prevMonthEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
+
+      // Helper to parse purchaseDate string
+      DateTime? parsePurchaseDate(String? raw) {
+        if (raw == null) return null;
+        final iso = DateTime.tryParse(raw);
+        if (iso != null) return iso;
+        final parts = raw.split(RegExp(r'[-/]'));
+        if (parts.length == 3) {
+          final a = int.tryParse(parts[0]);
+          final b = int.tryParse(parts[1]);
+          final c = int.tryParse(parts[2]);
+          if (a != null && b != null && c != null) {
+            if (c > 1900) {
+              return DateTime.tryParse('$c-${b.toString().padLeft(2, '0')}-${a.toString().padLeft(2, '0')}');
+            }
+          }
+        }
+        return null;
       }
 
       double totalSpending = 0.0;
-      double highestPurchase = 0.0;
+      double monthlySpending = 0.0;
+      double prevMonthlySpending = 0.0;
+
+      int totalReceipts = activeList.length;
+      int monthlyReceipts = 0;
+
       int activeWarranties = 0;
-      int expiringSoon = 0;
+      int expiringSoonWarranties = 0;
+      int expiredWarranties = 0;
+
       final categoryCount = <String, int>{};
-      final now = DateTime.now();
+      final categorySpendingCurrent = <String, double>{};
+      final categorySpendingPrev = <String, double>{};
 
       for (final r in activeList) {
         totalSpending += r.total;
-        if (r.total > highestPurchase) {
-          highestPurchase = r.total;
-        }
-
-        // Category counting
         categoryCount[r.category] = (categoryCount[r.category] ?? 0) + 1;
+
+        // Parse date
+        final pDate = parsePurchaseDate(r.purchaseDate);
+        if (pDate != null) {
+          // Check if in current month
+          if (pDate.year == now.year && pDate.month == now.month) {
+            monthlySpending += r.total;
+            monthlyReceipts++;
+            categorySpendingCurrent[r.category] = (categorySpendingCurrent[r.category] ?? 0.0) + r.total;
+          }
+          // Check if in previous month
+          else if (pDate.isAfter(prevMonthStart.subtract(const Duration(seconds: 1))) &&
+                   pDate.isBefore(prevMonthEnd.add(const Duration(seconds: 1)))) {
+            prevMonthlySpending += r.total;
+            categorySpendingPrev[r.category] = (categorySpendingPrev[r.category] ?? 0.0) + r.total;
+          }
+        } else {
+          // Fallback to createdAt if purchaseDate is not parseable
+          if (r.createdAt != null) {
+            final cDate = r.createdAt!;
+            if (cDate.year == now.year && cDate.month == now.month) {
+              monthlySpending += r.total;
+              monthlyReceipts++;
+              categorySpendingCurrent[r.category] = (categorySpendingCurrent[r.category] ?? 0.0) + r.total;
+            } else if (cDate.isAfter(prevMonthStart.subtract(const Duration(seconds: 1))) &&
+                       cDate.isBefore(prevMonthEnd.add(const Duration(seconds: 1)))) {
+              prevMonthlySpending += r.total;
+              categorySpendingPrev[r.category] = (categorySpendingPrev[r.category] ?? 0.0) + r.total;
+            }
+          }
+        }
 
         // Warranty calculations
         if (r.warrantyExpiry != null) {
@@ -170,14 +216,67 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
               activeWarranties++;
               final daysLeft = expiry.difference(now).inDays;
               if (daysLeft <= 30) {
-                expiringSoon++;
+                expiringSoonWarranties++;
               }
+            } else {
+              expiredWarranties++;
             }
           }
         }
       }
 
-      // Find most purchased category
+      // Generate AI Insights dynamically
+      final List<String> insights = [];
+
+      // 1. Warranty Insight
+      if (activeWarranties > 0) {
+        insights.add('You have $activeWarranties active warranties protecting your devices.');
+      } else {
+        insights.add('You have 0 active warranties. Scan receipts to stay protected!');
+      }
+
+      // 2. Spending Trend Insight
+      if (prevMonthlySpending > 0) {
+        final diffPercent = ((monthlySpending - prevMonthlySpending) / prevMonthlySpending * 100).round();
+        if (diffPercent > 0) {
+          insights.add('Total spending increased by $diffPercent% compared to last month.');
+        } else if (diffPercent < 0) {
+          insights.add('Overall spending decreased by ${diffPercent.abs()}% compared to last month.');
+        }
+      }
+
+      // 3. Category analysis (Electronics & Groceries, etc.)
+      // Electronics
+      final elecCurrent = categorySpendingCurrent['Electronics'] ?? 0.0;
+      final elecPrev = categorySpendingPrev['Electronics'] ?? 0.0;
+      if (elecPrev > 0 && elecCurrent > 0) {
+        final pct = ((elecCurrent - elecPrev) / elecPrev * 100).round();
+        if (pct > 0) {
+          insights.add('You spent $pct% more on electronics this month.');
+        } else if (pct < 0) {
+          insights.add('Electronics spending decreased by ${pct.abs()}% this month.');
+        }
+      } else if (elecCurrent > 0 && totalSpending > 0) {
+        final share = (elecCurrent / totalSpending * 100).round();
+        insights.add('Electronics account for $share% of your spending this month.');
+      }
+
+      // Groceries
+      final grocCurrent = categorySpendingCurrent['Groceries'] ?? 0.0;
+      final grocPrev = categorySpendingPrev['Groceries'] ?? 0.0;
+      if (grocPrev > 0 && grocCurrent > 0) {
+        final pct = ((grocCurrent - grocPrev) / grocPrev * 100).round();
+        if (pct > 0) {
+          insights.add('Groceries spending increased by $pct% this month.');
+        } else if (pct < 0) {
+          insights.add('Groceries spending decreased by ${pct.abs()}% this month.');
+        }
+      } else if (grocCurrent > 0 && totalSpending > 0) {
+        final share = (grocCurrent / totalSpending * 100).round();
+        insights.add('Groceries represents $share% of your total spending this month.');
+      }
+
+      // 4. Frequent category
       String mostPurchasedCat = 'None';
       int maxCount = 0;
       categoryCount.forEach((cat, count) {
@@ -186,25 +285,36 @@ final dashboardStatsProvider = Provider<Map<String, dynamic>>((ref) {
           mostPurchasedCat = cat;
         }
       });
+      if (mostPurchasedCat != 'None') {
+        insights.add('Your most frequent purchase category is $mostPurchasedCat.');
+      }
+
+      // Average spending
+      final avg = totalReceipts == 0 ? 0.0 : totalSpending / totalReceipts;
+      insights.add('Your average transaction value is ₹${avg.toStringAsFixed(0)}.');
 
       return {
-        'totalReceipts': activeList.length,
+        'totalReceipts': totalReceipts,
+        'monthlyReceipts': monthlyReceipts,
         'totalSpending': totalSpending,
-        'avgSpending': activeList.isEmpty ? 0.0 : totalSpending / activeList.length,
-        'highestPurchase': highestPurchase,
+        'monthlySpending': monthlySpending,
         'activeWarranties': activeWarranties,
-        'expiringSoon': expiringSoon,
+        'expiringSoon': expiringSoonWarranties,
+        'expiredWarranties': expiredWarranties,
+        'insights': insights,
         'categoryCount': categoryCount,
         'mostPurchasedCategory': mostPurchasedCat,
       };
     },
     orElse: () => {
       'totalReceipts': 0,
+      'monthlyReceipts': 0,
       'totalSpending': 0.0,
-      'avgSpending': 0.0,
-      'highestPurchase': 0.0,
+      'monthlySpending': 0.0,
       'activeWarranties': 0,
       'expiringSoon': 0,
+      'expiredWarranties': 0,
+      'insights': <String>[],
       'categoryCount': <String, int>{},
       'mostPurchasedCategory': 'None',
     },

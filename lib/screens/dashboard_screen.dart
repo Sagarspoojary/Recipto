@@ -99,15 +99,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final stats = ref.watch(dashboardStatsProvider);
     final filteredReceipts = ref.watch(filteredAndSortedReceiptsProvider);
 
-    final totalSpending = stats['totalSpending'] as double? ?? 0.0;
-    final totalReceipts = stats['totalReceipts'] as int? ?? 0;
-    final activeWarranties = stats['activeWarranties'] as int? ?? 0;
-    final expiringSoon = stats['expiringSoon'] as int? ?? 0;
-
-    // Filter warranties for Tab 0 (Home) display
-    final warrantyReceipts = allReceipts
-        .where((r) => !r.isDeleted && r.warrantyExpiry != null)
-        .toList();
+    final monthlySpending = stats['monthlySpending'] as double? ?? 0.0;
+    final monthlyReceipts = stats['monthlyReceipts'] as int? ?? 0;
+    final expiredWarranties = stats['expiredWarranties'] as int? ?? 0;
+    final insights = (stats['insights'] as List<dynamic>?)?.cast<String>() ?? [];
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
@@ -197,84 +192,154 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             sliver: SliverToBoxAdapter(
-              child: Row(
+              child: Column(
                 children: [
-                  // Spending Card
-                  Expanded(
-                    child: SizedBox(
-                      height: 145,
-                      child: BentoCard(
-                        glowColor: ReceiptoTheme.secondary,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('TOTAL SPENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1)),
-                              const SizedBox(height: 8),
-                              Expanded(
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      '₹${totalSpending.toStringAsFixed(0)}',
-                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
+                  Row(
+                    children: [
+                      // Monthly Spending Card
+                      Expanded(
+                        child: SizedBox(
+                          height: 145,
+                          child: BentoCard(
+                            glowColor: ReceiptoTheme.secondary,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('MONTHLY SPENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1)),
+                                  const SizedBox(height: 8),
+                                  Expanded(
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          '₹${monthlySpending.toStringAsFixed(0)}',
+                                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                  const SizedBox(height: 8),
+                                  Text('Total: ₹${totalSpending.toStringAsFixed(0)}', style: const TextStyle(fontSize: 9, color: ReceiptoTheme.highlight)),
+                                ],
                               ),
-                              const SizedBox(height: 8),
-                              Text('$totalReceipts Receipts Saved', style: const TextStyle(fontSize: 9, color: ReceiptoTheme.highlight)),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Scanned Receipts Card
+                      Expanded(
+                        child: SizedBox(
+                          height: 145,
+                          child: BentoCard(
+                            glowColor: ReceiptoTheme.primary,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('RECIPTS SCANNED', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1)),
+                                  const SizedBox(height: 8),
+                                  Expanded(
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          '$monthlyReceipts Items',
+                                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text('Total: $totalReceipts Receipts', style: const TextStyle(fontSize: 9, color: ReceiptoTheme.highlight)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Warranty Protection Card
+                  SizedBox(
+                    height: 120,
+                    width: double.infinity,
+                    child: BentoCard(
+                      glowColor: Colors.tealAccent,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('WARRANTY PROTECTION', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1)),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildWarrantyStatusItem('Active', activeWarranties, Colors.greenAccent),
+                                _buildWarrantyStatusItem('Expiring', expiringSoon, Colors.amberAccent),
+                                _buildWarrantyStatusItem('Expired', expiredWarranties, Colors.redAccent),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+
+                  // AI Insights Card
+                  if (insights.isNotEmpty)
+                    SizedBox(
+                      width: double.infinity,
+                      child: BentoCard(
+                        glowColor: Colors.deepPurpleAccent,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.psychology_outlined, color: Colors.deepPurpleAccent, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'AI INSIGHTS & SUGGESTIONS',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              ...insights.map((insight) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8.0),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('⚡ ', style: TextStyle(fontSize: 12)),
+                                        Expanded(
+                                          child: Text(
+                                            insight,
+                                            style: const TextStyle(fontSize: 12, color: Colors.white80, height: 1.3),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )),
                             ],
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Warranties Card
-                  Expanded(
-                    child: SizedBox(
-                      height: 145,
-                      child: BentoCard(
-                        glowColor: ReceiptoTheme.primary,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('ACTIVE WARRANTIES', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white60, letterSpacing: 1)),
-                              const SizedBox(height: 8),
-                              Expanded(
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      '$activeWarranties Items',
-                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                expiringSoon > 0 ? '$expiringSoon Expiring Soon' : 'All secure',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: expiringSoon > 0 ? Colors.amber : ReceiptoTheme.secondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -427,6 +492,36 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildWarrantyStatusItem(String title, int count, Color color) {
+    return Column(
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 12, color: Colors.white70),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '$count',
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      ],
     );
   }
 
