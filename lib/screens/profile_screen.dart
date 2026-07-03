@@ -196,6 +196,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       final updated = current.copyWith(
         fullName: _nameController.text.trim(),
+        email: _emailController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
         dateOfBirth: _dobController.text.trim(),
         gender: _gender,
@@ -334,12 +335,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     ),
                                     const SizedBox(height: 16),
 
-                                    // Email (Read Only)
+                                    // Email (Editable)
                                     TextFormField(
                                       controller: _emailController,
-                                      style: const TextStyle(color: Colors.white60, fontSize: 13),
-                                      readOnly: true,
-                                      decoration: _buildInputDecoration('Email Address', Icons.email_outlined, isReadOnly: true),
+                                      keyboardType: TextInputType.emailAddress,
+                                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                                      decoration: _buildInputDecoration('Email Address', Icons.email_outlined),
+                                      validator: (val) {
+                                        if (val == null || val.isEmpty) return 'Email is required';
+                                        if (!val.contains('@')) return 'Enter a valid email address';
+                                        return null;
+                                      },
                                     ),
                                     const SizedBox(height: 16),
 
