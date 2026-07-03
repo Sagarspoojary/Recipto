@@ -276,14 +276,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       // Left Card: Total Spending
                       Expanded(
                         child: SizedBox(
-                          height: 120,
+                          height: 130,
                           child: BentoCard(
                             glowColor: Colors.tealAccent,
                             child: Padding(
-                              padding: const EdgeInsets.all(12.0),
+                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(6),
@@ -293,7 +292,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                     ),
                                     child: const Icon(Icons.savings_outlined, color: Colors.tealAccent, size: 16),
                                   ),
-                                  const Text('Total Spending', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.white60)),
+                                  const Spacer(),
+                                  const Text(
+                                    'Total Spending',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.white60),
+                                  ),
+                                  const SizedBox(height: 4),
                                   FittedBox(
                                     fit: BoxFit.scaleDown,
                                     child: Text(
@@ -311,14 +317,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       // Right Card: Receipts Scanned
                       Expanded(
                         child: SizedBox(
-                          height: 120,
+                          height: 130,
                           child: BentoCard(
                             glowColor: Colors.blueAccent,
                             child: Padding(
-                              padding: const EdgeInsets.all(12.0),
+                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(6),
@@ -328,7 +333,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                     ),
                                     child: const Icon(Icons.receipt_long_outlined, color: Colors.blueAccent, size: 16),
                                   ),
-                                  const Text('Receipts Scanned', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.white60)),
+                                  const Spacer(),
+                                  const Text(
+                                    'Receipts Scanned',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.white60),
+                                  ),
+                                  const SizedBox(height: 4),
                                   Text(
                                     '$totalReceipts',
                                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
