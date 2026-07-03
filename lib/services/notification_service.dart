@@ -23,7 +23,7 @@ class NotificationService {
     );
 
     await _notificationsPlugin.initialize(
-      initializationSettings: initializationSettings,
+      settings: initializationSettings,
     );
   }
 
