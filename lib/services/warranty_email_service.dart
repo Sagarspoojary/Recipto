@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../models/receipt.dart';
+import 'notification_service.dart';
 
 /// Checks all active receipts for warranty expiry and sends email
 /// notifications via the Receipto FastAPI backend.
@@ -24,6 +25,9 @@ class WarrantyEmailService {
   /// Call this on every app start / resume.
   /// [receipts] should be the full non-deleted list from Firestore.
   static Future<void> checkAndNotify(List<Receipt> receipts) async {
+    // Request permission for local notifications
+    await NotificationService.requestPermissions();
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       print('WarrantyEmailService: No current user logged in.');
@@ -94,6 +98,11 @@ class WarrantyEmailService {
             print('WarrantyEmailService: Email sent status: $sent');
             if (sent) {
               await prefs.setBool(key, true);
+              await NotificationService.showNotification(
+                id: receiptId.hashCode ^ reminderDay,
+                title: 'Warranty Reminder',
+                body: 'The warranty for your product from "${receipt.merchant}" expires in $reminderDay days!',
+              );
             }
           } else {
             print('WarrantyEmailService: $reminderDay-day reminder email already sent for receipt ID $receiptId to $userEmail.');
@@ -116,6 +125,11 @@ class WarrantyEmailService {
           print('WarrantyEmailService: Email sent status: $sent');
           if (sent) {
             await prefs.setBool(key, true);
+            await NotificationService.showNotification(
+              id: receiptId.hashCode,
+              title: 'Warranty Expired',
+              body: 'The warranty for your product from "${receipt.merchant}" has expired!',
+            );
           }
         } else {
           print('WarrantyEmailService: Expiry email already sent for receipt ID $receiptId to $userEmail.');

@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/routes/routes.dart';
 import 'core/theme/theme.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,9 @@ void main() async {
     url: 'https://deixphiktjtlvabgbdqu.supabase.co',
     anonKey: 'sb_publishable_i8_vxpu4DUtYbqihlwLYqw_v5bYidz3',
   );
+
+  // Initialize local notifications
+  await NotificationService.init();
 
   runApp(
     const ProviderScope(
