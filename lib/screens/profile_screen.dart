@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../core/theme/theme.dart';
 import '../models/user_profile.dart';
 import '../providers/profile_provider.dart';
@@ -66,7 +67,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _populateFields(UserProfile? profile) {
     if (profile == null || _initialized) return;
     _nameController.text = profile.fullName;
-    _emailController.text = profile.email;
+    _emailController.text = FirebaseAuth.instance.currentUser?.email ?? profile.email;
     _phoneController.text = profile.phoneNumber;
     _dobController.text = profile.dateOfBirth;
     _countryController.text = profile.country;
