@@ -278,60 +278,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
-
-          // Section header for active warranties
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-              child: Text(
-                'WARRANTY PRODUCTS',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white.withOpacity(0.6), letterSpacing: 1.5),
-              ),
-            ),
-          ),
-
-          if (warrantyReceipts.isEmpty) ...[
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.verified_user_outlined,
-                        size: 64,
-                        color: Colors.white.withOpacity(0.12),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'No warranty items',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white60),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ] else ...[
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final receipt = warrantyReceipts[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: _buildReceiptListItem(context, receipt),
-                    );
-                  },
-                  childCount: warrantyReceipts.length,
-                ),
-              ),
-            ),
-          ],
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ] else ...[
           // ── TAB 1: RECEIPTS LIST & SEARCH ───────────────────────────────────
