@@ -24,27 +24,41 @@ class WarrantyEmailService {
   /// [receipts] should be the full non-deleted list from Firestore.
   static Future<void> checkAndNotify(List<Receipt> receipts) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      print('WarrantyEmailService: No current user logged in.');
+      return;
+    }
 
     final userEmail = user.email;
-    if (userEmail == null || userEmail.isEmpty) return;
+    if (userEmail == null || userEmail.isEmpty) {
+      print('WarrantyEmailService: User email is empty or null.');
+      return;
+    }
 
+    print('WarrantyEmailService: Checking warranties for $userEmail. Total receipts: ${receipts.length}');
     final prefs = await SharedPreferences.getInstance();
     final now   = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
     for (final receipt in receipts) {
       if (receipt.isDeleted) continue;
-      if (receipt.warrantyExpiry == null) continue;
+      if (receipt.warrantyExpiry == null) {
+        print('WarrantyEmailService: Receipt ${receipt.merchant} has no warranty expiry date.');
+        continue;
+      }
 
       // Attempt to parse the warranty expiry date.
-      // We support both ISO (YYYY-MM-DD) and DD-MM-YYYY / DD/MM/YYYY formats.
       final expiry = _parseDate(receipt.warrantyExpiry!);
-      if (expiry == null) continue;
+      if (expiry == null) {
+        print('WarrantyEmailService: Failed to parse warranty expiry date "${receipt.warrantyExpiry}" for merchant: ${receipt.merchant}');
+        continue;
+      }
 
       final expiryDay    = DateTime(expiry.year, expiry.month, expiry.day);
       final daysRemaining = expiryDay.difference(today).inDays;
       final receiptId    = receipt.receiptId;
+
+      print('WarrantyEmailService: Receipt for "${receipt.merchant}" expires on ${receipt.warrantyExpiry} (Parsed: $expiryDay). Days remaining: $daysRemaining');
 
       final productNames = receipt.products
           .map((p) => p.name)
@@ -56,6 +70,7 @@ class WarrantyEmailService {
         if (daysRemaining == reminderDay) {
           final key = '${_prefix3Day}${reminderDay}d_$receiptId';
           if (prefs.getBool(key) != true) {
+            print('WarrantyEmailService: Sending $reminderDay-day reminder email to $userEmail for ${receipt.merchant}...');
             final sent = await _sendEmail(
               userEmail: userEmail,
               merchant: receipt.merchant,
@@ -63,7 +78,12 @@ class WarrantyEmailService {
               expiryDate: receipt.warrantyExpiry!,
               daysRemaining: reminderDay,
             );
-            if (sent) await prefs.setBool(key, true);
+            print('WarrantyEmailService: Email sent status: $sent');
+            if (sent) {
+              await prefs.setBool(key, true);
+            }
+          } else {
+            print('WarrantyEmailService: $reminderDay-day reminder email already sent for receipt ID $receiptId.');
           }
         }
       }
@@ -72,6 +92,7 @@ class WarrantyEmailService {
       if (daysRemaining <= 0) {
         final key = '$_prefixExpiry$receiptId';
         if (prefs.getBool(key) != true) {
+          print('WarrantyEmailService: Sending expiry notification email to $userEmail for ${receipt.merchant}...');
           final sent = await _sendEmail(
             userEmail: userEmail,
             merchant: receipt.merchant,
@@ -79,7 +100,12 @@ class WarrantyEmailService {
             expiryDate: receipt.warrantyExpiry!,
             daysRemaining: daysRemaining,
           );
-          if (sent) await prefs.setBool(key, true);
+          print('WarrantyEmailService: Email sent status: $sent');
+          if (sent) {
+            await prefs.setBool(key, true);
+          }
+        } else {
+          print('WarrantyEmailService: Expiry email already sent for receipt ID $receiptId.');
         }
       }
     }
@@ -95,8 +121,10 @@ class WarrantyEmailService {
     required int daysRemaining,
   }) async {
     try {
+      final url = '$_baseUrl/send-warranty-email';
+      print('WarrantyEmailService: Posting to $url...');
       final response = await http.post(
-        Uri.parse('$_baseUrl/send-warranty-email'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_email':    userEmail,
@@ -107,9 +135,10 @@ class WarrantyEmailService {
         }),
       ).timeout(const Duration(seconds: 20));
 
+      print('WarrantyEmailService: Response status code: ${response.statusCode}, body: ${response.body}');
       return response.statusCode == 200;
-    } catch (_) {
-      // Silent fail — we'll retry next time the app opens
+    } catch (e) {
+      print('WarrantyEmailService: Error sending email request: $e');
       return false;
     }
   }
